@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+"""
+Integration tests for the FCOPS CLI after wheel installation.
+"""
+
+import unittest
+import subprocess
+import sys
+from pathlib import Path
+
+
+class TestCLIIntegration(unittest.TestCase):
+    """Test CLI commands after wheel installation."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        # Find the installed fcops_mpf_ppf2kml command
+        self.cli_command = None
+        try:
+            # Try to find the command in PATH
+            result = subprocess.run(['which', 'fcops_mpf_ppf2kml'],
+                                  capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                self.cli_command = result.stdout.strip()
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass
+
+        # If not found in PATH, try common installation locations
+        if not self.cli_command:
+            common_paths = [
+                Path.home() / '.local' / 'bin' / 'fcops_mpf_ppf2kml',
+                Path('/usr/local/bin/fcops_mpf_ppf2kml'),
+                Path('/usr/bin/fcops_mpf_ppf2kml'),
+            ]
+            for path in common_paths:
+                if path.exists():
+                    self.cli_command = str(path)
+                    break
+
+    def test_cli_command_available(self):
+        """Test that the CLI command is available after installation."""
+        self.assertIsNotNone(self.cli_command,
+                           "fcops-ppf-parser command not found. "
+                           "Make sure the wheel package is installed.")
+
+    def test_config_command_exists(self):
+        """Test that the config command is available."""
+        if not self.cli_command:
+            self.skipTest("CLI command not available")
+
+        result = subprocess.run([self.cli_command, '--help'],
+                              capture_output=True, text=True, timeout=10)
+
+        self.assertEqual(result.returncode, 0,
+                        f"CLI help failed: {result.stderr}")
+        self.assertIn('config', result.stdout,
+                     "config command not found in CLI help")
+
+    def test_config_command_output(self):
+        """Test that the config command produces expected output."""
+        if not self.cli_command:
+            self.skipTest("CLI command not available")
+
+        result = subprocess.run([self.cli_command, 'config'],
+                              capture_output=True, text=True, timeout=30)
+
+        self.assertEqual(result.returncode, 0,
+                        f"Config command failed: {result.stderr}")
+
+        # Check for expected content in output
+        output = result.stdout
+        self.assertIn('CONFIGURATION FILE', output,
+                     "Config header not found in output")
+        self.assertIn('FLX_OPER_MPL_ORBSCT', output,
+                     "Config file name not found in output")
+        self.assertIn('<?xml version="1.0"?>', output,
+                     "XML declaration not found in output")
+        self.assertIn('<Earth_Observation_File', output,
+                     "XML root element not found in output")
+        self.assertIn('FLEX', output,
+                     "Mission name not found in output")
+
+
+    def test_command_file_config(self):
+        """Test that the config command shows the correct file path."""
+        if not self.cli_command:
+            self.skipTest("CLI command not available")
+
+        result = subprocess.run([self.cli_command, 'config'],
+                              capture_output=True, text=True, timeout=30)
+
+        self.assertEqual(result.returncode, 0,
+                        f"Config command failed: {result.stderr}")
+
+        output = result.stdout
+        # The orbit scenario file should be in the package data directory
+        self.assertRegex(output, r'.*/fcops/data/FLX_OPER_MPL_ORBSCT_.*\.EOF',
+                        "Config file path not found or incorrect in output")
+
+
+    def test_version_option(self):
+        """Test that the --version option shows version and library information."""
+        if not self.cli_command:
+            self.skipTest("CLI command not available")
+
+        result = subprocess.run([self.cli_command, '--version'],
+                              capture_output=True, text=True, timeout=10)
+
+        self.assertEqual(result.returncode, 0,
+                        f"Version option failed: {result.stderr}")
+
+        output = result.stdout.strip()
+        # Check for expected content in output
+        lines = output.split('\n')
+        
+        # Should have at least 6 lines
+        self.assertGreaterEqual(len(lines), 6, f"Version output should have at least 6 lines, got {len(lines)}")
+        
+        # Check fcops version line
+        self.assertIn('fcops_mpf_ppf2kml - 0.0.0', lines[0],
+                     "fcops version line not found or incorrect")
+        
+        # Check CFI libraries header
+        self.assertEqual(lines[4], 'Current Earth Explorer CFI libraries:',
+                        "CFI libraries header not found")
+
+
+if __name__ == '__main__':
+    unittest.main()
