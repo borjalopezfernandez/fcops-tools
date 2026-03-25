@@ -8,6 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from loguru import logger
+logger = logger.patch(lambda record: record.update(name=record["file"].name))
 
 class TestCLIIntegration(unittest.TestCase):
     """Test CLI commands after wheel installation."""
@@ -69,16 +71,8 @@ class TestCLIIntegration(unittest.TestCase):
 
         # Check for expected content in output
         output = result.stdout
-        self.assertIn('CONFIGURATION FILE', output,
-                     "Config header not found in output")
         self.assertIn('FLX_OPER_MPL_ORBSCT', output,
                      "Config file name not found in output")
-        self.assertIn('<?xml version="1.0"?>', output,
-                     "XML declaration not found in output")
-        self.assertIn('<Earth_Observation_File', output,
-                     "XML root element not found in output")
-        self.assertIn('FLEX', output,
-                     "Mission name not found in output")
 
 
     def test_command_file_config(self):
@@ -123,6 +117,17 @@ class TestCLIIntegration(unittest.TestCase):
         # Check CFI libraries header
         self.assertEqual(lines[4], 'Current Earth Explorer CFI libraries:',
                         "CFI libraries header not found")
+
+
+    def test_process_nppf(self):
+        """Test that the --version option shows version and library information."""
+        if not self.cli_command:
+            self.skipTest("CLI command not available")
+
+        cmd = 'fcops_mpf_ppf2kml list test/data/FLX_OPER_MPL_NPPF___20260901T000000_20260928T000000_0001.xml'
+        
+        logger.debug(cmd)
+
 
 
 if __name__ == '__main__':

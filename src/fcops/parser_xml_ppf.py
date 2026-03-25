@@ -1,8 +1,7 @@
 """
-Parser for FLEX mission planning XML files (FLX_OPER_MPL_*.xml).
+Parser for FLEX mission planning XML files (MPL_xNPFF*.xml).
 
-This module provides functionality to decode and parse Delta Nominal Payload Planning Files (DNPPF),
-Ground Station Planning Files (GSPLN), and other planning files in XML format.
+This module provides functionality to decode and parse Delta Nominal Payload Planning Files (DNPPF).
 """
 
 import xml.etree.ElementTree as ET
@@ -173,7 +172,7 @@ class PlanningFile:
         return [e for e in self.events if e.absolute_orbit == orbit]
 
 
-def parse_file(filepath: str) -> PlanningFile:
+def parse_file_ppf(filepath: str) -> PlanningFile:
     """
     Parse a FLEX planning XML file.
     

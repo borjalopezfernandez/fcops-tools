@@ -14,7 +14,10 @@ from typing import Optional
 
 from importlib.metadata import version as package_version
 
-from fcops.parser_xml_ppf import parse_file, PlanningFile
+from loguru import logger
+logger = logger.patch(lambda record: record.update(name=record["file"].name))
+
+from fcops.parser_xml_ppf import parse_file_ppf, PlanningFile
 
 try:
     import eocfi
@@ -27,6 +30,8 @@ except Exception as e:
 from eocfi.api    import version as eocfi_version
 from eocfi.api_xo import xo_check_library_version
 
+# -----------------------------------------------------------------------------
+
 def print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
@@ -36,19 +41,42 @@ def print_version(ctx, param, value):
     xo_check_library_version()
     ctx.exit()
 
+# Configure debug logging
+def setup_debug_logging(debug_enabled):
+    """Setup debug logging if enabled."""
+    if debug_enabled:
+        logger.enable("fcops")
+        logger.add(
+            lambda msg: None,  # Dummy sink for now
+            level="DEBUG",
+            format="<level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+        )
+        logger.debug("Debug logging enabled")
+
 @click.group()
 @click.option('--version', is_flag=True, callback=print_version, expose_value=False, is_eager=True, help='Show version and library information.')
-def cli():
-    """FLEX Planning File (PPF) Parser - Parse and query FLEX mission planning files."""
-    pass
+@click.option('--debug', is_flag=True, help='Enable debug logging.')
+@click.pass_context
+def cli(ctx, debug):
+    """
+    \b
+        FCOPS - Parse and query FLEX mission planning files.
+    \b
+    """
+    # Ensure that ctx.obj exists
+    if ctx.obj is None:
+        ctx.obj = {}
+    ctx.obj['debug'] = debug
+    setup_debug_logging(debug)
 
+# -----------------------------------------------------------------------------
 
 @cli.command()
 @click.argument('filepath', type=click.Path(exists=True))
 def info(filepath):
     """Display header information from a planning file."""
     try:
-        planning = parse_file(filepath)
+        planning = parse_file_ppf(filepath)
         
         click.echo("\n" + "=" * 70)
         click.echo("PLANNING FILE INFORMATION")
@@ -68,14 +96,48 @@ def info(filepath):
         click.echo(click.style(f"Error: {e}", fg='red'), err=True)
         raise SystemExit(1)
 
+# -----------------------------------------------------------------------------
 
 @cli.command()
 @click.argument('filepath', type=click.Path(exists=True))
-@click.option('--limit', '-l', type=int, default=10, help='Number of events to display')
-def list(filepath, limit):
+@click.option('--limit', '-l', type=int, default = 10, help='Number of events to display')
+@click.pass_context
+def list(ctx, filepath, limit):
     """List events from a planning file."""
+
+    import fcops
+    
+    from eocfi.api_xl import xl_model_init
+    from eocfi.api_xl import xl_time_ref_init_file
+    from eocfi.api_xo import xo_orbit_init_file
+    from eocfi.api_xp import xp_atmos_init
+    from eocfi.constants import XL_MODEL_DEFAULT, XP_STD_INIT
+
+    path_orb_sct    = importlib.resources.files(fcops) / 'data' / 'FLX_OPER_MPL_ORBSCT_20240204T220001_99999999T999999_0001.EOF'
+    debug           = ctx.obj.get('debug', False) if ctx.obj else False
+    
+    if debug == True:
+        logger.info(f'xl_time_ref_init_file XL_MODEL_DEFAULT')
+    xl_model_init(XL_MODEL_DEFAULT, debug)
+
+    if debug == True:
+        logger.info(f'xl_time_ref_init_file {os.path.basename(str(path_orb_sct))}')
+    xl_time_ref_init_file(str(path_orb_sct), debug)
+
+    if debug == True:
+        logger.info(f'xl_time_ref_init_file {os.path.basename(str(path_orb_sct))}')
+    xo_orbit_init_file(str(path_orb_sct), debug)
+
+    atmos_init_mode = XP_STD_INIT
+    atmos_model     = 0
+    atmos_init_file = None
+
+    if debug == True:
+        logger.info(f'xp_atmos_init XP_STD_INIT')
+    xp_atmos_init(atmos_init_mode, atmos_model, atmos_init_file, debug)
+
     try:
-        planning = parse_file(filepath)
+        planning = parse_file_ppf(filepath)
         
         click.echo(f"\nShowing first {min(limit, len(planning.events))} events:\n")
         
@@ -87,18 +149,45 @@ def list(filepath, limit):
             if event.parameters:
                 click.echo(f"   Parameters: {event.parameters}")
             click.echo()
+
+        # Detect datatakes: groups where FPOBS_ID, FTOEARTH, and FTOCNFG_ events coexist
+        group_events = {}
+        for event in planning.events:
+            group_events.setdefault(event.group_id, []).append(event)
+
+        datatakes = []
+        for group_id, events in group_events.items():
+            event_ids = {e.event_id for e in events}
+            has_fpobs = 'FPOBS_ID' in event_ids
+            has_ftoearth = 'FTOEARTH' in event_ids
+            has_ftocnfg = any(e.event_id.startswith('FTOCNFG_') for e in events)
+
+            if has_fpobs and has_ftoearth and has_ftocnfg:
+                datatakes.append((group_id, events))
+
+        if datatakes:
+            click.echo(f"\nDatatakes identified (group_id with FPOBS_ID, FTOEARTH, FTOCNFG_): {len(datatakes)}\n")
+            for group_id, events in sorted(datatakes, key=lambda x: x[0]):
+                click.echo(f"Group {group_id}:")
+                for ev in events:
+                    if ev.event_id in {'FPOBS_ID', 'FTOEARTH'} or ev.event_id.startswith('FTOCNFG_'):
+                        click.echo(f"  - {ev.event_id} at {ev.time} (event_type={ev.event_type})")
+                click.echo()
+        else:
+            click.echo("\nNo complete datatakes found with the required event set")
         
     except Exception as e:
         click.echo(click.style(f"Error: {e}", fg='red'), err=True)
         raise SystemExit(1)
 
+# -----------------------------------------------------------------------------
 
 @cli.command()
 @click.argument('filepath', type=click.Path(exists=True))
 def stats(filepath):
     """Display statistics about events in a planning file."""
     try:
-        planning = parse_file(filepath)
+        planning = parse_file_ppf(filepath)
         
         # Count by event ID
         id_counts = {}
@@ -152,7 +241,7 @@ def stats(filepath):
 def search(filepath, event_id, event_type, orbit, start, end, limit, output_json):
     """Search and filter events in a planning file."""
     try:
-        planning = parse_file(filepath)
+        planning = parse_file_ppf(filepath)
         results = planning.events
         
         # Apply filters
@@ -216,7 +305,7 @@ def search(filepath, event_id, event_type, orbit, start, end, limit, output_json
 def export(filepath, output, pretty):
     """Export planning file data as JSON."""
     try:
-        planning = parse_file(filepath)
+        planning = parse_file_ppf(filepath)
         data = planning.to_dict()
         
         if pretty:
@@ -241,7 +330,7 @@ def export(filepath, output, pretty):
 def analyze(filepath):
     """Perform detailed analysis of a planning file."""
     try:
-        planning = parse_file(filepath)
+        planning = parse_file_ppf(filepath)
         
         click.echo("\n" + "=" * 70)
         click.echo("DETAILED ANALYSIS")

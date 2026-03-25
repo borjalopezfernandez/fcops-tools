@@ -9,7 +9,7 @@ from pathlib import Path
 from datetime import datetime
 
 from src.fcops.parser_xml_ppf import (
-    parse_file, parse_file_string, Header, Event, PlanningFile,
+    parse_file_ppf, parse_file_string, Header, Event, PlanningFile,
     _parse_datetime, _parse_int, _parse_float, _try_convert_value
 )
 
@@ -238,7 +238,7 @@ class TestFileIntegration(unittest.TestCase):
         if not test_file.exists():
             self.skipTest(f"Test file not found: {test_file}")
         
-        planning = parse_file(str(test_file))
+        planning = parse_file_ppf(str(test_file))
         
         # Verify header
         self.assertEqual(planning.header.spacecraft, 'FLEX')

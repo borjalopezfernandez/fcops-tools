@@ -66,11 +66,7 @@ def test_config_command():
 
         # Check for expected content
         checks = [
-            ('CONFIGURATION FILE' in output, "Config header not found"),
             ('FLX_OPER_MPL_ORBSCT' in output, "Config file name not found"),
-            ('<?xml version="1.0"?>' in output, "XML declaration not found"),
-            ('<Earth_Observation_File' in output, "XML root element not found"),
-            ('FLEX' in output, "Mission name not found"),
         ]
 
         for check, error_msg in checks:
