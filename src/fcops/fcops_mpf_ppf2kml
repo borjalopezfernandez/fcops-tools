@@ -151,27 +151,88 @@ def list(ctx, filepath, limit):
             click.echo()
 
         # Detect datatakes: groups where FPOBS_ID, FTOEARTH, and FTOCNFG_ events coexist
+        # Also detect calibration datatakes: groups where FPCAL_ID, FTOCALIB, and FTOCNFG_ events coexist
         group_events = {}
         for event in planning.events:
             group_events.setdefault(event.group_id, []).append(event)
 
         datatakes = []
         for group_id, events in group_events.items():
-            event_ids = {e.event_id for e in events}
-            has_fpobs = 'FPOBS_ID' in event_ids
-            has_ftoearth = 'FTOEARTH' in event_ids
-            has_ftocnfg = any(e.event_id.startswith('FTOCNFG_') for e in events)
+            event_ids       = {e.event_id for e in events}
+            
+            # Check for observation datatakes
+            has_fpobs       = 'FPOBS_ID' in event_ids
+            has_ftoearth    = 'FTOEARTH' in event_ids
+            has_ftocnfg     = any(e.event_id.startswith('FTOCNFG_') for e in events)
+            
+            # Check for calibration datatakes
+            has_fpcal       = 'FPCAL_ID' in event_ids
+            has_ftocalib    = 'FTOCALIB' in event_ids
 
             if has_fpobs and has_ftoearth and has_ftocnfg:
-                datatakes.append((group_id, events))
+                # Calculate duration as difference between FTOEARTH and FTOCNFG_
+                fpobs_time = None
+                ftoearth_time = None
+                ftocnfg_time = None
+                
+                for ev in events:
+                    if ev.event_id == 'FPOBS_ID':
+                        fpobs_time = ev.time
+                    elif ev.event_id == 'FTOEARTH':
+                        ftoearth_time = ev.time
+                    elif ev.event_id.startswith('FTOCNFG_'):
+                        ftocnfg_time = ev.time
+                
+                duration = None
+                if ftoearth_time and ftocnfg_time:
+                    duration = ftocnfg_time - ftoearth_time
+                
+                datatakes.append((group_id, events, duration, 'observation', fpobs_time, ftocnfg_time))
+            
+            elif has_fpcal and has_ftocalib and has_ftocnfg:
+                # Calculate duration as difference between FTOCALIB and FTOCNFG_
+                fpcal_time = None
+                ftocalib_time = None
+                ftocnfg_time = None
+                
+                for ev in events:
+                    if ev.event_id == 'FPCAL_ID':
+                        fpcal_time = ev.time
+                    elif ev.event_id == 'FTOCALIB':
+                        ftocalib_time = ev.time
+                    elif ev.event_id.startswith('FTOCNFG_'):
+                        ftocnfg_time = ev.time
+                
+                duration = None
+                if ftocalib_time and ftocnfg_time:
+                    duration = ftocnfg_time - ftocalib_time
+                
+                datatakes.append((group_id, events, duration, 'calibration', fpcal_time, ftocnfg_time))
 
         if datatakes:
-            click.echo(f"\nDatatakes identified (group_id with FPOBS_ID, FTOEARTH, FTOCNFG_): {len(datatakes)}\n")
-            for group_id, events in sorted(datatakes, key=lambda x: x[0]):
-                click.echo(f"Group {group_id}:")
+            click.echo(f"\nDatatakes identified:\n")
+            sorted_datatakes = sorted(datatakes, key=lambda x: x[4] if x[4] else float('inf'))
+            
+            for idx, (group_id, events, duration, dt_type, start_time, end_time) in enumerate(sorted_datatakes):
+                click.echo(f"Group {group_id} ({dt_type}):")
+                if dt_type == 'observation':
+                    event_keys = {'FPOBS_ID', 'FTOEARTH'}
+                else:  # calibration
+                    event_keys = {'FPCAL_ID', 'FTOCALIB'}
+                
                 for ev in events:
-                    if ev.event_id in {'FPOBS_ID', 'FTOEARTH'} or ev.event_id.startswith('FTOCNFG_'):
+                    if ev.event_id in event_keys or ev.event_id.startswith('FTOCNFG_'):
                         click.echo(f"  - {ev.event_id} at {ev.time} (event_type={ev.event_type})")
+                if duration:
+                    click.echo(f"  Duration: {duration}")
+                
+                # Calculate separation to next datatake
+                if idx < len(sorted_datatakes) - 1:
+                    next_start_time = sorted_datatakes[idx + 1][4]
+                    if end_time and next_start_time:
+                        separation = next_start_time - end_time
+                        click.echo(f"  Separation to next: {separation}")
+                
                 click.echo()
         else:
             click.echo("\nNo complete datatakes found with the required event set")
