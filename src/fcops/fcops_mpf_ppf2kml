@@ -18,6 +18,7 @@ from loguru import logger
 logger = logger.patch(lambda record: record.update(name=record["file"].name))
 
 from fcops.parser_xml_ppf import parse_file_ppf, PlanningFile
+from lxml import etree
 
 try:
     import eocfi
@@ -101,8 +102,9 @@ def info(filepath):
 @cli.command()
 @click.argument('filepath', type=click.Path(exists=True))
 @click.option('--limit', '-l', type=int, default = 10, help='Number of events to display')
+@click.option('--kml', is_flag=True, help='Output datatakes as KML')
 @click.pass_context
-def list(ctx, filepath, limit):
+def list(ctx, filepath, limit, kml):
     """List events from a planning file."""
 
     import fcops
@@ -111,9 +113,13 @@ def list(ctx, filepath, limit):
     from eocfi.api_xl import xl_time_ref_init_file
     from eocfi.api_xo import xo_orbit_init_file
     from eocfi.api_xp import xp_atmos_init
-    from eocfi.constants import XL_MODEL_DEFAULT, XP_STD_INIT
+    from eocfi.api_xv import xv_swath_id_init
+    from eocfi.api_xv import xv_swathpos_compute
+    from eocfi.c_types import XV_Time
+    from eocfi.constants import XL_MODEL_DEFAULT, XP_STD_INIT, XV_UTC_TYPE, XV_FILE_SDF
 
     path_orb_sct    = importlib.resources.files(fcops) / 'data' / 'FLX_OPER_MPL_ORBSCT_20240204T220001_99999999T999999_0001.EOF'
+    path_sdf        = importlib.resources.files(fcops) / 'data' / 'FLX_OPER_MPL_SW_DEF_00000000T000000_99999999T999999_0001.EOF'
     debug           = ctx.obj.get('debug', False) if ctx.obj else False
     
     if debug == True:
@@ -128,27 +134,25 @@ def list(ctx, filepath, limit):
         logger.info(f'xl_time_ref_init_file {os.path.basename(str(path_orb_sct))}')
     xo_orbit_init_file(str(path_orb_sct), debug)
 
-    atmos_init_mode = XP_STD_INIT
-    atmos_model     = 0
-    atmos_init_file = None
-
     if debug == True:
-        logger.info(f'xp_atmos_init XP_STD_INIT')
-    xp_atmos_init(atmos_init_mode, atmos_model, atmos_init_file, debug)
+        logger.info(f'xv_swath_id_init {os.path.basename(str(path_sdf))}')
+    swath_mode = XV_FILE_SDF
+    xv_swath_id_init(swath_mode, str(path_sdf), debug)
 
     try:
         planning = parse_file_ppf(filepath)
         
-        click.echo(f"\nShowing first {min(limit, len(planning.events))} events:\n")
-        
-        for i, event in enumerate(planning.events[:limit], 1):
-            click.echo(f"{i}. [{event.event_id}] {event.description}")
-            click.echo(f"   Time: {event.time}")
-            click.echo(f"   Type: {event.event_type}")
-            click.echo(f"   Orbit: {event.absolute_orbit} (relative: {event.relative_orbit})")
-            if event.parameters:
-                click.echo(f"   Parameters: {event.parameters}")
-            click.echo()
+        if not kml:
+            click.echo(f"\nShowing first {min(limit, len(planning.events))} events:\n")
+            
+            for i, event in enumerate(planning.events[:limit], 1):
+                click.echo(f"{i}. [{event.event_id}] {event.description}")
+                click.echo(f"   Time: {event.time}")
+                click.echo(f"   Type: {event.event_type}")
+                click.echo(f"   Orbit: {event.absolute_orbit} (relative: {event.relative_orbit})")
+                if event.parameters:
+                    click.echo(f"   Parameters: {event.parameters}")
+                click.echo()
 
         # Detect datatakes: groups where FPOBS_ID, FTOEARTH, and FTOCNFG_ events coexist
         # Also detect calibration datatakes: groups where FPCAL_ID, FTOCALIB, and FTOCNFG_ events coexist
@@ -210,30 +214,115 @@ def list(ctx, filepath, limit):
                 datatakes.append((group_id, events, duration, 'calibration', fpcal_time, ftocnfg_time))
 
         if datatakes:
-            click.echo(f"\nDatatakes identified:\n")
             sorted_datatakes = sorted(datatakes, key=lambda x: x[4] if x[4] else float('inf'))
             
-            for idx, (group_id, events, duration, dt_type, start_time, end_time) in enumerate(sorted_datatakes):
-                click.echo(f"Group {group_id} ({dt_type}):")
-                if dt_type == 'observation':
-                    event_keys = {'FPOBS_ID', 'FTOEARTH'}
-                else:  # calibration
-                    event_keys = {'FPCAL_ID', 'FTOCALIB'}
+            if kml:
+                # Generate KML
+                root = etree.Element('kml', xmlns='http://www.opengis.net/kml/2.2')
+                document = etree.SubElement(root, 'Document')
                 
-                for ev in events:
-                    if ev.event_id in event_keys or ev.event_id.startswith('FTOCNFG_'):
-                        click.echo(f"  - {ev.event_id} at {ev.time} (event_type={ev.event_type})")
-                if duration:
-                    click.echo(f"  Duration: {duration}")
+                obs_folder = etree.SubElement(document, 'Folder')
+                etree.SubElement(obs_folder, 'name').text = 'Observation Datatakes'
                 
-                # Calculate separation to next datatake
-                if idx < len(sorted_datatakes) - 1:
-                    next_start_time = sorted_datatakes[idx + 1][4]
-                    if end_time and next_start_time:
-                        separation = next_start_time - end_time
-                        click.echo(f"  Separation to next: {separation}")
+                cal_folder = etree.SubElement(document, 'Folder')
+                etree.SubElement(cal_folder, 'name').text = 'Calibration Datatakes'
                 
-                click.echo()
+                for idx, (group_id, events, duration, dt_type, start_time, end_time) in enumerate(sorted_datatakes):
+                    # Compute positions
+                    time_swath = XV_Time()
+                    time_swath.type = XV_UTC_TYPE
+                    time_swath.utc_time = eocfi.converters.datetime_utc_to_mjd2000(start_time)
+                    pos_start = xv_swathpos_compute(time_swath, False)
+                    
+                    time_swath.utc_time = eocfi.converters.datetime_utc_to_mjd2000(end_time)
+                    pos_end = xv_swathpos_compute(time_swath, False)
+                    
+                    # Create single Placemark for datatake with LinearRing connecting start and end
+                    folder = obs_folder if dt_type == 'observation' else cal_folder
+                    placemark = etree.SubElement(folder, 'Placemark')
+                    etree.SubElement(placemark, 'name').text = f'Group {group_id} ({dt_type})'
+                    
+                    description = f'Type: {dt_type}\nDuration: {duration}\nStart: {start_time}\nEnd: {end_time}'
+                    if idx < len(sorted_datatakes) - 1:
+                        next_start_time = sorted_datatakes[idx + 1][4]
+                        if end_time and next_start_time:
+                            separation = next_start_time - end_time
+                            description += f'\nSeparation to next: {separation}'
+                    etree.SubElement(placemark, 'description').text = description
+                    
+                    # Extract calibration ID parameter and event attributes
+                    if dt_type == 'observation':
+                        param_name = 'CALIB_ID_EOB'
+                        event_id_to_find = 'FPOBS_ID'
+                    else:  # calibration
+                        param_name = 'CALIB_ID_CAL'
+                        event_id_to_find = 'FPCAL_ID'
+                    
+                    param_value = None
+                    event_obj = None
+                    for ev in events:
+                        if ev.event_id == event_id_to_find:
+                            param_value = ev.parameters.get(param_name)
+                            event_obj = ev
+                            break
+                    
+                    # Add ExtendedData with parameter and event attributes
+                    extended_data = etree.SubElement(placemark, 'ExtendedData')
+                    
+                    # Add calibration ID parameter
+                    if param_value is not None:
+                        data_elem = etree.SubElement(extended_data, 'Data')
+                        data_elem.set('name', param_name)
+                        etree.SubElement(data_elem, 'value').text = str(param_value)
+                    
+                    # Add event attributes
+                    if event_obj:
+                        for attr_name in ['absolute_orbit', 'relative_orbit', 'sec_from_anx', 'deg_from_anx']:
+                            attr_value = getattr(event_obj, attr_name, None)
+                            if attr_value is not None:
+                                data_elem = etree.SubElement(extended_data, 'Data')
+                                data_elem.set('name', attr_name)
+                                etree.SubElement(data_elem, 'value').text = str(attr_value)
+                    
+                    # Create Polygon with LinearRing connecting start and end positions
+                    polygon = etree.SubElement(placemark, 'Polygon')
+                    outer_boundary = etree.SubElement(polygon, 'outerBoundaryIs')
+                    linear_ring = etree.SubElement(outer_boundary, 'LinearRing')
+                    
+                    # Build coordinates list: start -> end -> back to start (to close the ring)
+                    start_coord = f"{pos_start[1][0]['lon']},{pos_start[1][0]['lat']},{pos_start[1][0]['alt']}"
+                    end_coord = f"{pos_end[1][0]['lon']},{pos_end[1][0]['lat']},{pos_end[1][0]['alt']}"
+                    coordinates_text = f"{start_coord}\n          {end_coord}\n          {start_coord}"
+                    
+                    etree.SubElement(linear_ring, 'coordinates').text = coordinates_text
+                
+                click.echo(etree.tostring(root, encoding='unicode', pretty_print=True))
+            
+            else:
+                click.echo(f"\nDatatakes identified:\n")
+                
+                for idx, (group_id, events, duration, dt_type, start_time, end_time) in enumerate(sorted_datatakes):
+                    click.echo(f"Group {group_id} ({dt_type}):")
+                    if dt_type == 'observation':
+                        event_keys = {'FPOBS_ID', 'FTOEARTH'}
+                    else:  # calibration
+                        event_keys = {'FPCAL_ID', 'FTOCALIB'}
+                    
+                    for ev in events:
+                        if ev.event_id in event_keys or ev.event_id.startswith('FTOCNFG_'):
+                            click.echo(f"  - {ev.event_id} at {ev.time} (event_type={ev.event_type})")
+                    if duration:
+                        click.echo(f"  Duration: {duration}")
+                    
+                    # Calculate separation to next datatake
+                    if idx < len(sorted_datatakes) - 1:
+                        next_start_time = sorted_datatakes[idx + 1][4]
+                        if end_time and next_start_time:
+                            separation = next_start_time - end_time
+                            click.echo(f"  Separation to next: {separation}")
+                    
+                    click.echo()
+
         else:
             click.echo("\nNo complete datatakes found with the required event set")
         
