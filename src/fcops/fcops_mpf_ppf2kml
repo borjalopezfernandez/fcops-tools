@@ -4,12 +4,13 @@ FLEX Planning File (PPF) Parser CLI
 
 Command-line interface for parsing and querying FLEX mission planning XML files.
 """
+from operator import pos
 import os
 import click
 import json
 import importlib
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from importlib.metadata import version as package_version
@@ -30,6 +31,9 @@ except Exception as e:
 
 from eocfi.api    import version as eocfi_version
 from eocfi.api_xo import xo_check_library_version
+
+FLX_SDF = 'FLX_OPER_MPL_SW_DEF_00000000T000000_99999999T999999_0001.EOF'
+FLX_OSC = 'FLX_OPER_MPL_ORBSCT_20240204T220001_99999999T999999_0001.EOF'
 
 # -----------------------------------------------------------------------------
 
@@ -118,8 +122,8 @@ def list(ctx, filepath, limit, kml):
     from eocfi.c_types import XV_Time
     from eocfi.constants import XL_MODEL_DEFAULT, XP_STD_INIT, XV_UTC_TYPE, XV_FILE_SDF
 
-    path_orb_sct    = importlib.resources.files(fcops) / 'data' / 'FLX_OPER_MPL_ORBSCT_20240204T220001_99999999T999999_0001.EOF'
-    path_sdf        = importlib.resources.files(fcops) / 'data' / 'FLX_OPER_MPL_SW_DEF_00000000T000000_99999999T999999_0001.EOF'
+    path_orb_sct    = importlib.resources.files(fcops) / 'data' / FLX_OSC
+    path_sdf        = importlib.resources.files(fcops) / 'data' / FLX_SDF
     debug           = ctx.obj.get('debug', False) if ctx.obj else False
     
     if debug == True:
@@ -218,29 +222,59 @@ def list(ctx, filepath, limit, kml):
             
             if kml:
                 # Generate KML
-                root = etree.Element('kml', xmlns='http://www.opengis.net/kml/2.2')
-                document = etree.SubElement(root, 'Document')
+                root        = etree.Element('kml', xmlns='http://www.opengis.net/kml/2.2')
+                document    = etree.SubElement(root, 'Document')
+                etree.SubElement(document, 'name').text = 'FLEX Core Operations Service'
                 
-                obs_folder = etree.SubElement(document, 'Folder')
+                # Add styles for observation and calibration
+                style_obs = etree.SubElement(document, 'Style')
+                style_obs.set('id', 'observationStyle')
+                # poly_style_obs = etree.SubElement(style_obs, 'PolyStyle')
+                # etree.SubElement(poly_style_obs, 'color').text = '0000ff00'  # transparent green
+                # etree.SubElement(poly_style_obs, 'fill').text = '1'
+                line_style_obs = etree.SubElement(style_obs, 'LineStyle')
+                etree.SubElement(line_style_obs, 'color').text = 'ff00ff00'  # green
+                etree.SubElement(line_style_obs, 'width').text = '2'
+                
+                style_cal = etree.SubElement(document, 'Style')
+                style_cal.set('id', 'calibrationStyle')
+                # poly_style_cal = etree.SubElement(style_cal, 'PolyStyle')
+                # etree.SubElement(poly_style_cal, 'color').text = '000000ff'  # transparent blue
+                # etree.SubElement(poly_style_cal, 'fill').text = '1'
+                line_style_cal = etree.SubElement(style_cal, 'LineStyle')
+                etree.SubElement(line_style_cal, 'color').text = 'ff0000ff'  # blue
+                etree.SubElement(line_style_cal, 'width').text = '2'
+
+                obs_folder  = etree.SubElement(document, 'Folder')
                 etree.SubElement(obs_folder, 'name').text = 'Observation Datatakes'
                 
                 cal_folder = etree.SubElement(document, 'Folder')
                 etree.SubElement(cal_folder, 'name').text = 'Calibration Datatakes'
                 
                 for idx, (group_id, events, duration, dt_type, start_time, end_time) in enumerate(sorted_datatakes):
-                    # Compute positions
-                    time_swath = XV_Time()
-                    time_swath.type = XV_UTC_TYPE
-                    time_swath.utc_time = eocfi.converters.datetime_utc_to_mjd2000(start_time)
-                    pos_start = xv_swathpos_compute(time_swath, False)
-                    
-                    time_swath.utc_time = eocfi.converters.datetime_utc_to_mjd2000(end_time)
-                    pos_end = xv_swathpos_compute(time_swath, False)
+                    # Compute positions every 10 seconds between start and end
+                    positions_west  = []
+                    positions_east  = []
+                    current_time    = start_time
+                    while current_time <= end_time:
+                        time_swath          = XV_Time()
+                        time_swath.type     = XV_UTC_TYPE
+                        time_swath.utc_time = eocfi.converters.datetime_utc_to_mjd2000(current_time)
+                        pos                 = xv_swathpos_compute(time_swath, False)
+                        if debug == True:
+                            logger.debug(f"Computed position for {current_time}: {pos}")
+                            logger.debug(f"Computed position for {current_time}: {pos[1][0]}")
+                            logger.debug(f"Computed position for {current_time}: {pos[1][1]}")
+                            logger.debug(f"Computed position for {current_time}: {pos[1][2]}")
+
+                        positions_west.append(pos[1][0])
+                        positions_east.append(pos[1][2])
+                        current_time += timedelta(seconds=10)
                     
                     # Create single Placemark for datatake with LinearRing connecting start and end
-                    folder = obs_folder if dt_type == 'observation' else cal_folder
-                    placemark = etree.SubElement(folder, 'Placemark')
-                    etree.SubElement(placemark, 'name').text = f'Group {group_id} ({dt_type})'
+                    parent_folder   = obs_folder if dt_type == 'observation' else cal_folder
+                    subfolder       = etree.SubElement(parent_folder, 'Folder')
+                    etree.SubElement(subfolder, 'name').text = f'{dt_type.capitalize()} Datatake {start_time.strftime("%Y-%m-%d %H:%M:%S")}'
                     
                     description = f'Type: {dt_type}\nDuration: {duration}\nStart: {start_time}\nEnd: {end_time}'
                     if idx < len(sorted_datatakes) - 1:
@@ -248,18 +282,27 @@ def list(ctx, filepath, limit, kml):
                         if end_time and next_start_time:
                             separation = next_start_time - end_time
                             description += f'\nSeparation to next: {separation}'
-                    etree.SubElement(placemark, 'description').text = description
+                    etree.SubElement(subfolder, 'description').text = description
+                    
+                    placemark = etree.SubElement(subfolder, 'Placemark')
+                    etree.SubElement(placemark, 'name').text = f'Group {group_id} ({dt_type})'
+                    etree.SubElement(placemark, 'styleUrl').text = f'#{dt_type}Style'
+                    
+                    # Add TimeSpan for the datatake period
+                    time_span = etree.SubElement(placemark, 'TimeSpan')
+                    etree.SubElement(time_span, 'begin').text = start_time.isoformat()
+                    etree.SubElement(time_span, 'end').text = end_time.isoformat()
                     
                     # Extract calibration ID parameter and event attributes
                     if dt_type == 'observation':
-                        param_name = 'CALIB_ID_EOB'
-                        event_id_to_find = 'FPOBS_ID'
+                        param_name          = 'CALIB_ID_EOB'
+                        event_id_to_find    = 'FPOBS_ID'
                     else:  # calibration
-                        param_name = 'CALIB_ID_CAL'
-                        event_id_to_find = 'FPCAL_ID'
+                        param_name          = 'CALIB_ID_CAL'
+                        event_id_to_find    = 'FPCAL_ID'
                     
                     param_value = None
-                    event_obj = None
+                    event_obj   = None
                     for ev in events:
                         if ev.event_id == event_id_to_find:
                             param_value = ev.parameters.get(param_name)
@@ -269,12 +312,28 @@ def list(ctx, filepath, limit, kml):
                     # Add ExtendedData with parameter and event attributes
                     extended_data = etree.SubElement(placemark, 'ExtendedData')
                     
+                    data_elem = etree.SubElement(extended_data, 'Data')
+                    data_elem.set('name', 'satellite')
+                    etree.SubElement(data_elem, 'value').text       = 'FLEX'
+                    etree.SubElement(data_elem, 'displayName').text = 'Satellite'
+
                     # Add calibration ID parameter
                     if param_value is not None:
                         data_elem = etree.SubElement(extended_data, 'Data')
                         data_elem.set('name', param_name)
                         etree.SubElement(data_elem, 'value').text = str(param_value)
                     
+                    # Add start and end times
+                    data_elem = etree.SubElement(extended_data, 'Data')
+                    data_elem.set('name', 'start_time')
+                    etree.SubElement(data_elem, 'value').text       = start_time.isoformat()
+                    etree.SubElement(data_elem, 'displayName').text = 'Start Time'
+                    
+                    data_elem = etree.SubElement(extended_data, 'Data')
+                    data_elem.set('name', 'end_time')
+                    etree.SubElement(data_elem, 'value').text       = end_time.isoformat()
+                    etree.SubElement(data_elem, 'displayName').text = 'End Time'
+
                     # Add event attributes
                     if event_obj:
                         for attr_name in ['absolute_orbit', 'relative_orbit', 'sec_from_anx', 'deg_from_anx']:
@@ -284,17 +343,43 @@ def list(ctx, filepath, limit, kml):
                                 data_elem.set('name', attr_name)
                                 etree.SubElement(data_elem, 'value').text = str(attr_value)
                     
-                    # Create Polygon with LinearRing connecting start and end positions
-                    polygon = etree.SubElement(placemark, 'Polygon')
-                    outer_boundary = etree.SubElement(polygon, 'outerBoundaryIs')
-                    linear_ring = etree.SubElement(outer_boundary, 'LinearRing')
+                    # Create Polygon with LinearRing connecting all positions
+                    # polygon         = etree.SubElement(placemark, 'Polygon')
+                    # outer_boundary  = etree.SubElement(polygon, 'outerBoundaryIs')
+                    # linear_ring     = etree.SubElement(outer_boundary, 'LinearRing')
+                    linear_ring     = etree.SubElement(placemark, 'LinearRing')
+                    etree.SubElement(linear_ring, 'tesselate').text     = 'true'
+                    etree.SubElement(linear_ring, 'altitudeMode').text  = 'clampToGround'
                     
-                    # Build coordinates list: start -> end -> back to start (to close the ring)
-                    start_coord = f"{pos_start[1][0]['lon']},{pos_start[1][0]['lat']},{pos_start[1][0]['alt']}"
-                    end_coord = f"{pos_end[1][0]['lon']},{pos_end[1][0]['lat']},{pos_end[1][0]['alt']}"
-                    coordinates_text = f"{start_coord}\n          {end_coord}\n          {start_coord}"
+                    # ---------------------------------------------------------
+                    # Build coordinates list from all positions, connecting the first point of each swath
+
+                    # Need to go backwards from the end to the start to connect the last point of each swath, otherwise the ring will be twisted and not closed properly
+
+                    coords = []
+                    if debug == True:
+                        logger.debug("")
+                        logger.debug(f"[{start_time} - {end_time} - {group_id}] Adding coordinates for position: {pos}")
+                    
+                    for pos in positions_east:
+                        coord = f"{pos['lon']},{pos['lat']},{pos['alt']}"
+                        if debug == True:
+                            logger.info(f"Adding coordinate: {coord}")
+                        coords.append(coord)
+
+                    for pos in reversed(positions_west):
+                        coord = f"{pos['lon']},{pos['lat']},{pos['alt']}"
+                        if debug == True:
+                            logger.info(f"Adding coordinate: {coord}")
+                        coords.append(coord)
+
+                    coord = f"{positions_east[0]['lon']},{positions_east[0]['lat']},{positions_east[0]['alt']}"
+                    coords.append(coord)
+
+                    coordinates_text = "\n          ".join(coords)
                     
                     etree.SubElement(linear_ring, 'coordinates').text = coordinates_text
+                    # ---------------------------------------------------------
                 
                 click.echo(etree.tostring(root, encoding='unicode', pretty_print=True))
             
@@ -447,6 +532,7 @@ def search(filepath, event_id, event_type, orbit, start, end, limit, output_json
         click.echo(click.style(f"Error: {e}", fg='red'), err=True)
         raise SystemExit(1)
 
+# -----------------------------------------------------------------------------
 
 @cli.command()
 @click.argument('filepath', type=click.Path(exists=True))
@@ -474,6 +560,7 @@ def export(filepath, output, pretty):
         click.echo(click.style(f"Error: {e}", fg='red'), err=True)
         raise SystemExit(1)
 
+# -----------------------------------------------------------------------------
 
 @cli.command()
 @click.argument('filepath', type=click.Path(exists=True))
@@ -541,6 +628,8 @@ def analyze(filepath):
         raise SystemExit(1)
 
 
+# -----------------------------------------------------------------------------
+
 @cli.command()
 def config():
     """Display the configuration file contents."""
@@ -549,25 +638,34 @@ def config():
         import fcops
         
         # Get the path to the config file in package data
-        config_path = None
+        config_path_osc = None
+        config_path_sdf = None
         try:
             # For Python 3.9+
-            config_path = importlib.resources.files(fcops) / "data" / "FLX_OPER_MPL_ORBSCT_20240204T220001_99999999T999999_0001.EOF"
+            config_path_osc = importlib.resources.files(fcops) / "data" / FLX_OSC
+            config_path_sdf = importlib.resources.files(fcops) / "data" / FLX_SDF
         except AttributeError:
             # For older Python versions, use pkg_resources
             import pkg_resources
-            config_path = Path(pkg_resources.resource_filename('fcops', 'data/FLX_OPER_MPL_ORBSCT_20240204T220001_99999999T999999_0001.EOF'))
+            config_path_osc = Path(pkg_resources.resource_filename('fcops', f'data/{FLX_OSC}'))
+            config_path_sdf = Path(pkg_resources.resource_filename('fcops', f'data/{FLX_SDF}'))
         
-        if not config_path.exists():
-            click.echo(click.style(f"Config file not found: {config_path}", fg='red'), err=True)
+        if not config_path_osc.exists():
+            click.echo(click.style(f"Config file not found: {config_path_osc}", fg='red'), err=True)
             raise SystemExit(1)
         
-        click.echo(config_path)
+        if not config_path_sdf.exists():
+            click.echo(click.style(f"Config file not found: {config_path_sdf}", fg='red'), err=True)
+            raise SystemExit(1)
+
+        click.echo(config_path_osc)
+        click.echo(config_path_sdf)
         
     except Exception as e:
         click.echo(click.style(f"Error: {e}", fg='red'), err=True)
         raise SystemExit(1)
 
+# -----------------------------------------------------------------------------
 
 
 if __name__ == '__main__':
