@@ -172,6 +172,43 @@ class PlanningFile:
         return [e for e in self.events if e.absolute_orbit == orbit]
 
 
+def get_calibration_mode(event: Event) -> str:
+    """
+    Get a string representation of the calibration mode from an event.
+    
+    Args:
+        event: The Event object containing the parameters.
+        
+    Returns:
+        A string describing the calibration mode.
+    """
+    value_hr1_cal_st_cal = event.parameters.get('HR1_CAL_ST_CAL', 0)
+    if value_hr1_cal_st_cal == 0:
+        return "EOBS"
+    elif value_hr1_cal_st_cal == 1:
+        return "DARKNP"
+    elif value_hr1_cal_st_cal == 11:
+        return "Calibration Type 11"
+    elif value_hr1_cal_st_cal == 51:
+        return "Calibration Type 51"
+    else:
+        return f"Unknown Status: {value_hr1_cal_st_cal}"
+
+
+def is_event_id_in_events(list_events: List[Event], event_id: str) -> bool:
+    """
+    Check if an event ID exists in a list of events.
+    
+    Args:
+        list_events: List of Event objects.
+        event_id: The ID to search for.
+        
+    Returns:
+        True if the event ID is found, False otherwise.
+    """
+    return any(event.event_id == event_id for event in list_events)
+        
+
 def parse_file_ppf(filepath: str) -> PlanningFile:
     """
     Parse a FLEX planning XML file.

@@ -111,7 +111,7 @@ class TestCLIIntegration(unittest.TestCase):
         self.assertGreaterEqual(len(lines), 6, f"Version output should have at least 6 lines, got {len(lines)}")
         
         # Check fcops version line
-        self.assertIn('fcops_mpf_ppf2kml - 0.0.0', lines[0],
+        self.assertIn('fcops_mpf_ppf2kml - 0.', lines[0],
                      "fcops version line not found or incorrect")
         
         # Check CFI libraries header

@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
+
 FLEX Planning File (PPF) Parser CLI
 
 Command-line interface for parsing and querying FLEX mission planning XML files.
+
 """
 from operator import pos
 import os
@@ -18,7 +20,7 @@ from importlib.metadata import version as package_version
 from loguru import logger
 logger = logger.patch(lambda record: record.update(name=record["file"].name))
 
-from fcops.parser_xml_ppf import parse_file_ppf, PlanningFile
+from fcops.parser_xml_ppf import parse_file_ppf, PlanningFile, get_calibration_mode
 from lxml import etree
 
 try:
@@ -127,6 +129,9 @@ def list(ctx, filepath, limit, kml):
     debug           = ctx.obj.get('debug', False) if ctx.obj else False
     
     if debug == True:
+        logger.info(f'initialise eocfi functions')
+
+    if debug == True:
         logger.info(f'xl_time_ref_init_file XL_MODEL_DEFAULT')
     xl_model_init(XL_MODEL_DEFAULT, debug)
 
@@ -145,7 +150,7 @@ def list(ctx, filepath, limit, kml):
 
     try:
         planning = parse_file_ppf(filepath)
-        
+
         if not kml:
             click.echo(f"\nShowing first {min(limit, len(planning.events))} events:\n")
             
@@ -162,6 +167,10 @@ def list(ctx, filepath, limit, kml):
         # Also detect calibration datatakes: groups where FPCAL_ID, FTOCALIB, and FTOCNFG_ events coexist
         group_events = {}
         for event in planning.events:
+            '''
+            if event.event_id == 'FPCAL_ID':
+                logger.debug(event)
+            '''
             group_events.setdefault(event.group_id, []).append(event)
 
         datatakes = []
@@ -171,17 +180,22 @@ def list(ctx, filepath, limit, kml):
             # Check for observation datatakes
             has_fpobs       = 'FPOBS_ID' in event_ids
             has_ftoearth    = 'FTOEARTH' in event_ids
-            has_ftocnfg     = any(e.event_id.startswith('FTOCNFG_') for e in events)
             
             # Check for calibration datatakes
             has_fpcal       = 'FPCAL_ID' in event_ids
             has_ftocalib    = 'FTOCALIB' in event_ids
+            has_facqtime    = 'FACQTIME' in event_ids
+            has_cu_pos_dark = 'FCUDARK_' in event_ids
+            has_cu_nadir    = 'FCUNADIR' in event_ids
 
+            # Transition to configuration
+            has_ftocnfg     = 'FTOCNFG_' in event_ids
+            
             if has_fpobs and has_ftoearth and has_ftocnfg:
                 # Calculate duration as difference between FTOEARTH and FTOCNFG_
-                fpobs_time = None
-                ftoearth_time = None
-                ftocnfg_time = None
+                fpobs_time      = None
+                ftoearth_time   = None
+                ftocnfg_time    = None
                 
                 for ev in events:
                     if ev.event_id == 'FPOBS_ID':
@@ -198,24 +212,43 @@ def list(ctx, filepath, limit, kml):
                 datatakes.append((group_id, events, duration, 'observation', fpobs_time, ftocnfg_time))
             
             elif has_fpcal and has_ftocalib and has_ftocnfg:
-                # Calculate duration as difference between FTOCALIB and FTOCNFG_
-                fpcal_time = None
-                ftocalib_time = None
-                ftocnfg_time = None
                 
+                fpcal_id_event  = None
+                # Calculate duration as difference between FTOCALIB and FTOCNFG_
+                fpcal_time      = None
+                ftocalib_time   = None
+                ftocnfg_time    = None
+                
+                # group calibrations have various FPCAL_ID events to enable & disable cal flags
+                # > "FPCAL_ID" group_id="xxxx" parameter_count="7" CALIB_ID_CAL="425" HR1_CAL_TYPE="1" HR1_CAL_ST_CAL="11" HR2_CAL_TYPE="1" HR2_CAL_ST_CAL="11" LR_CAL_TYPE="1" LR_CAL_ST_CAL="11"/>
+                # > "FPCAL_ID" group_id="xxxx" parameter_count="7" CALIB_ID_CAL="426" HR1_CAL_TYPE="1" HR1_CAL_ST_CAL="51" HR2_CAL_TYPE="1" HR2_CAL_ST_CAL="51" LR_CAL_TYPE="1" LR_CAL_ST_CAL="51"/>
+                # > "FPCAL_ID" group_id="xxxx" parameter_count="7" CALIB_ID_CAL="427" HR1_CAL_TYPE="0" HR1_CAL_ST_CAL="0" HR2_CAL_TYPE="0" HR2_CAL_ST_CAL="0" LR_CAL_TYPE="0" LR_CAL_ST_CAL="0"/>
+                # logger.debug(f"-----------------------------------------------------------------------------")
+                # logger.debug(f"Calibration sequence: {group_id}")
+                list_cal_events = []
                 for ev in events:
+                    # logger.debug(f"Calibration event: {ev.event_id} at {ev.time}")
+                    list_cal_events.append(ev)
                     if ev.event_id == 'FPCAL_ID':
-                        fpcal_time = ev.time
+                        fpcal_time      = ev.time
+                        fpcal_id_event  = ev
                     elif ev.event_id == 'FTOCALIB':
-                        ftocalib_time = ev.time
+                        ftocalib_time   = ev.time
                     elif ev.event_id.startswith('FTOCNFG_'):
                         ftocnfg_time = ev.time
-                
-                duration = None
-                if ftocalib_time and ftocnfg_time:
-                    duration = ftocnfg_time - ftocalib_time
-                
-                datatakes.append((group_id, events, duration, 'calibration', fpcal_time, ftocnfg_time))
+                        duration = None
+                        if ftocalib_time and ftocnfg_time:
+                            duration = ftocnfg_time - ftocalib_time
+                            datatakes.append((group_id, list_cal_events, duration, 'calibration', ftocalib_time, ftocnfg_time))
+                            list_cal_events = []
+                            ftocalib_time   = None
+                            ftocnfg_time    = None
+                            fpcal_time      = None
+                            fpcal_id_event  = None
+
+                if fpcal_id_event != None: # and fpcal_id_event != None and fpcal_id_event.parameters.get("HR1_CAL_TYPE", 0) == 1:
+                    if fpcal_id_event.parameters.get("HR1_CAL_TYPE", 0) == 1:
+                        logger.warning(f"Orphan FPCAL_ID at {fpcal_time} / Group ID: {group_id} | missing FTOCALIB or FTOCNFG_ events to determine datatake")
 
         if datatakes:
             sorted_datatakes = sorted(datatakes, key=lambda x: x[4] if x[4] else float('inf'))
@@ -263,13 +296,11 @@ def list(ctx, filepath, limit, kml):
                         pos                 = xv_swathpos_compute(time_swath, False)
                         if debug == True:
                             logger.debug(f"Computed position for {current_time}: {pos}")
-                            logger.debug(f"Computed position for {current_time}: {pos[1][0]}")
-                            logger.debug(f"Computed position for {current_time}: {pos[1][1]}")
-                            logger.debug(f"Computed position for {current_time}: {pos[1][2]}")
 
+                        # Avoid the swath middle point pos[1][1]
                         positions_west.append(pos[1][0])
                         positions_east.append(pos[1][2])
-                        current_time += timedelta(seconds=10)
+                        current_time += timedelta(seconds = 10)
                     
                     # Create single Placemark for datatake with LinearRing connecting start and end
                     parent_folder   = obs_folder if dt_type == 'observation' else cal_folder
@@ -293,20 +324,24 @@ def list(ctx, filepath, limit, kml):
                     etree.SubElement(time_span, 'begin').text = start_time.isoformat()
                     etree.SubElement(time_span, 'end').text = end_time.isoformat()
                     
-                    # Extract calibration ID parameter and event attributes
+                    # Extract calibration ID parameter and event(s) attributes
                     if dt_type == 'observation':
                         param_name          = 'CALIB_ID_EOB'
                         event_id_to_find    = 'FPOBS_ID'
+                        event_to_find_start = 'FTOEARTH'
                     else:  # calibration
                         param_name          = 'CALIB_ID_CAL'
                         event_id_to_find    = 'FPCAL_ID'
+                        event_to_find_start = 'FTOCALIB'
                     
                     param_value = None
                     event_obj   = None
+
+                    # Find the CALIB_ID_xxx event: CALIB_ID_EOB | CALIB_ID_CAL
                     for ev in events:
                         if ev.event_id == event_id_to_find:
                             param_value = ev.parameters.get(param_name)
-                            event_obj = ev
+                            event_obj   = ev
                             break
                     
                     # Add ExtendedData with parameter and event attributes
@@ -317,13 +352,33 @@ def list(ctx, filepath, limit, kml):
                     etree.SubElement(data_elem, 'value').text       = 'FLEX'
                     etree.SubElement(data_elem, 'displayName').text = 'Satellite'
 
-                    # Add calibration ID parameter
+                    # Add observation ID | calibration ID parameter
                     if param_value is not None:
                         data_elem = etree.SubElement(extended_data, 'Data')
                         data_elem.set('name', param_name)
                         etree.SubElement(data_elem, 'value').text = str(param_value)
                     
-                    # Add start and end times
+                    # Extract calibration ID parameter and event(s) attributes
+                    if dt_type == 'observation':
+                        data_elem = etree.SubElement(extended_data, 'Data')
+                        data_elem.set('name', 'mode')
+                        etree.SubElement(data_elem, 'displayName').text = 'Mode'
+                        etree.SubElement(data_elem, 'value').text       = 'EOB'
+                    else:  # calibration
+                        data_elem.set('name', 'mode')
+                        etree.SubElement(data_elem, 'displayName').text = 'Mode'
+                        etree.SubElement(data_elem, 'value').text       = 'Not recognised'
+
+                        if any(event.event_id == 'FCUSUN__' for event in events):
+                            etree.SubElement(data_elem, 'value').text = f'CU-SUN-CALIBRATION_ST_CAL({str(event_obj.parameters.get("HR1_CAL_ST_CAL", 0))})'
+
+                        if any(event.event_id == 'FCUNADIR' for event in events):
+                            etree.SubElement(data_elem, 'value').text = f'CU-NADIR-CALIBRATION_ST_CAL({str(event_obj.parameters.get("HR1_CAL_ST_CAL", 0))})'
+
+                        if any(event.event_id == 'FCUDARK_' for event in events):
+                            etree.SubElement(data_elem, 'value').text = f'CU-DARK-CALIBRATION_ST_CAL({str(event_obj.parameters.get("HR1_CAL_ST_CAL", 0))})'
+
+                    # Add datatake start and end times
                     data_elem = etree.SubElement(extended_data, 'Data')
                     data_elem.set('name', 'start_time')
                     etree.SubElement(data_elem, 'value').text       = start_time.isoformat()
@@ -333,6 +388,12 @@ def list(ctx, filepath, limit, kml):
                     data_elem.set('name', 'end_time')
                     etree.SubElement(data_elem, 'value').text       = end_time.isoformat()
                     etree.SubElement(data_elem, 'displayName').text = 'End Time'
+
+                    # Find the datatake start event: FTOEARTH | FTOCALIB
+                    for ev in events:
+                        if ev.event_id == event_to_find_start:
+                            event_obj   = ev
+                            break
 
                     # Add event attributes
                     if event_obj:
@@ -354,7 +415,8 @@ def list(ctx, filepath, limit, kml):
                     # ---------------------------------------------------------
                     # Build coordinates list from all positions, connecting the first point of each swath
 
-                    # Need to go backwards from the end to the start to connect the last point of each swath, otherwise the ring will be twisted and not closed properly
+                    # Need to go backwards from the end to the start to connect the last point of each swath, 
+                    # otherwise the ring will be twisted and not closed properly
 
                     coords = []
                     if debug == True:
@@ -375,7 +437,6 @@ def list(ctx, filepath, limit, kml):
 
                     coord = f"{positions_east[0]['lon']},{positions_east[0]['lat']},{positions_east[0]['alt']}"
                     coords.append(coord)
-
                     coordinates_text = "\n          ".join(coords)
                     
                     etree.SubElement(linear_ring, 'coordinates').text = coordinates_text

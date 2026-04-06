@@ -10,7 +10,8 @@ from datetime import datetime
 
 from src.fcops.parser_xml_ppf import (
     parse_file_ppf, parse_file_string, Header, Event, PlanningFile,
-    _parse_datetime, _parse_int, _parse_float, _try_convert_value
+    _parse_datetime, _parse_int, _parse_float, _try_convert_value,
+    get_calibration_mode
 )
 
 
@@ -151,6 +152,98 @@ class TestEvent(unittest.TestCase):
         self.assertIn('CALIB_ID_EOB', event.parameters)
         # Parameters are automatically converted to appropriate types (int, float, or string)
         self.assertEqual(event.parameters['CALIB_ID_EOB'], 31)
+
+    def test_get_calibration_mode(self):
+        """Test getting calibration mode string."""
+        # Test with HR1_CAL_ST_CAL = 0
+        event_not_cal = Event(
+            time=datetime.now(),
+            event_id='test',
+            description='test',
+            source='test',
+            event_type='test',
+            count=1,
+            absolute_orbit=1,
+            relative_orbit=1,
+            sec_from_anx=0.0,
+            deg_from_anx=0.0,
+            group_id=1,
+            parameter_count=1,
+            parameters={'HR1_CAL_ST_CAL': 0}
+        )
+        self.assertEqual(get_calibration_mode(event_not_cal), "EOBS")
+        
+        # Test with HR1_CAL_ST_CAL = 1
+        event_cal = Event(
+            time=datetime.now(),
+            event_id='test',
+            description='test',
+            source='test',
+            event_type='test',
+            count=1,
+            absolute_orbit=1,
+            relative_orbit=1,
+            sec_from_anx=0.0,
+            deg_from_anx=0.0,
+            group_id=1,
+            parameter_count=1,
+            parameters={'HR1_CAL_ST_CAL': 1}
+        )
+        self.assertEqual(get_calibration_mode(event_cal), "DARKNP")
+        
+        # Test with HR1_CAL_ST_CAL = 11
+        event_type11 = Event(
+            time=datetime.now(),
+            event_id='test',
+            description='test',
+            source='test',
+            event_type='test',
+            count=1,
+            absolute_orbit=1,
+            relative_orbit=1,
+            sec_from_anx=0.0,
+            deg_from_anx=0.0,
+            group_id=1,
+            parameter_count=1,
+            parameters={'HR1_CAL_ST_CAL': 11}
+        )
+        self.assertEqual(get_calibration_mode(event_type11), "Calibration Type 11")
+        
+        # Test with unknown value
+        event_unknown = Event(
+            time=datetime.now(),
+            event_id='test',
+            description='test',
+            source='test',
+            event_type='test',
+            count=1,
+            absolute_orbit=1,
+            relative_orbit=1,
+            sec_from_anx=0.0,
+            deg_from_anx=0.0,
+            group_id=1,
+            parameter_count=1,
+            parameters={'HR1_CAL_ST_CAL': 99}
+        )
+        self.assertEqual(get_calibration_mode(event_unknown), "Unknown Status: 99")
+        
+        # Test with missing parameter (defaults to 0)
+        event_missing = Event(
+            time=datetime.now(),
+            event_id='test',
+            description='test',
+            source='test',
+            event_type='test',
+            count=1,
+            absolute_orbit=1,
+            relative_orbit=1,
+            sec_from_anx=0.0,
+            deg_from_anx=0.0,
+            group_id=1,
+            parameter_count=0,
+            parameters={}
+        )
+        self.assertEqual(get_calibration_mode(event_missing), "EOBS")
 
 
 class TestPlanningFile(unittest.TestCase):
