@@ -55,9 +55,11 @@ def test(context):
     '''
     Execution of unit tests:
     '''
+    test_fcops_install(context)
     test_unit_parser_xml_ppf(context)
     test_unit_fcops_mpf_nppf(context)
-    test_fcops_install(context)
+    test_unit_fcops_maap_query_product(context)
+    test_unit_fcops_maap_query_datatake(context)
     
 
 @task
@@ -87,5 +89,23 @@ def test_fcops_install(context):
     Execution of unit test test_parser_xml_ppf.py 
     '''
     cmd = 'python3 test/test_config_after_install.py'
+    logger.info(cmd)
+    context.run(cmd)
+
+@task
+def test_unit_fcops_maap_query_product(context):
+    '''
+    Execution of unit test: test/test_unit_fcops_maap_query_product.py
+    '''
+    cmd = 'pytest -rpf -s test/test_unit_fcops_maap_query_product.py'
+    logger.info(cmd)
+    context.run(cmd)
+
+@task
+def test_unit_fcops_maap_query_datatake(context):
+    '''
+    Execution of unit test: test/test_unit_fcops_maap_query_datatake.py
+    '''
+    cmd = 'pytest -rpf -s test/test_unit_fcops_maap_query_datatake.py'
     logger.info(cmd)
     context.run(cmd)

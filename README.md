@@ -6,12 +6,29 @@ FLEX Core Payload Data Ground Segment Operations Service
 Install from the built wheel package:
 
 ```bash
-pip install dist/fcops-0.0.0-py3-none-any.whl
+pip install dist/fcops-x.y.z-py3-none-any.whl
 ```
 
 ## Usage
 
-After installation, the CLI tool is available as `fcops_mpf_ppf2kml`:
+After installation, the FCOPS tool are available.
+
+
+## fcops_maap_query_datatake
+
+```bash
+fcops_maap_query_datatake --type L1C_FLXSYN --start 2023-07-12T07:00:00Z --end 2023-07-12T09:00:00Z --baseline 01 -C
+```
+
+
+## fcops_maap_query_product
+
+```bash
+fcops_maap_query_product --id FLX_L1B_OBS____20230712T075954_20230712T080232_20260325T161900_0158_100_064_0021_01 | jq .properties
+```
+
+
+## fcops_mpf_ppf2kml
 
 ```bash
 fcops_mpf_ppf2kml --help
@@ -27,16 +44,3 @@ Available commands:
 - `analyze`: Perform detailed analysis
 - `config`: Display the configuration file contents
 
-## Testing
-
-After wheel installation, verify the config command works:
-
-```bash
-python test_config_after_install.py
-```
-
-Or run the full integration test suite:
-
-```bash
-python -m pytest test/test_cli_integration.py -v
-```

@@ -19,12 +19,12 @@ setup(
     description             =   "FLEX Core Payload Data Ground Segment Operations Service",
     author                  =   "FCOPS Team",
     long_description        =   open('README.md', encoding='utf-8').read() if False else "FLEX Mission Operations Tools",
-    # packages                =   find_packages(where="src"),
     packages                =   ['fcops', 'fcops.data'],
     package_dir             =   {"fcops": "src/fcops", "fcops.data": "src/fcops/data"},
     package_data            =   {'fcops': ['data/*']},
     include_package_data    =   True,
     scripts                 =   ['src/fcops/fcops_mpf_ppf2kml',
+                                 'src/fcops/fcops_maap_query_datatake',
                                  'src/fcops/fcops_maap_query_product'
                                 ],
     install_requires        =   [
