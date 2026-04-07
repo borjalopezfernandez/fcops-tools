@@ -37,6 +37,9 @@ from eocfi.api_xo import xo_check_library_version
 FLX_SDF = 'FLX_OPER_MPL_SW_DEF_00000000T000000_99999999T999999_0001.EOF'
 FLX_OSC = 'FLX_OPER_MPL_ORBSCT_20240204T220001_99999999T999999_0001.EOF'
 
+DATATAKE_MINIMUM_LENGTH     = timedelta(seconds = 32)
+DATATAKE_MINIMUM_SEPARATION = timedelta(seconds = 60)
+DATATAKE_MARGIN_SEPARATION  = timedelta(seconds = 1)
 # -----------------------------------------------------------------------------
 
 def print_version(ctx, param, value):
@@ -173,6 +176,9 @@ def list(ctx, filepath, limit, kml):
             '''
             group_events.setdefault(event.group_id, []).append(event)
 
+        # -----------------------------------------------------------
+        # Obtain the datatakes from the grouped events
+        # Group events with calibrations can lead to various datatakes
         datatakes = []
         for group_id, events in group_events.items():
             event_ids       = {e.event_id for e in events}
@@ -250,7 +256,10 @@ def list(ctx, filepath, limit, kml):
                     if fpcal_id_event.parameters.get("HR1_CAL_TYPE", 0) == 1:
                         logger.warning(f"Orphan FPCAL_ID at {fpcal_time} / Group ID: {group_id} | missing FTOCALIB or FTOCNFG_ events to determine datatake")
 
+        # -----------------------------------------------------------
+
         if datatakes:
+            
             sorted_datatakes = sorted(datatakes, key=lambda x: x[4] if x[4] else float('inf'))
             
             if kml:
@@ -289,6 +298,7 @@ def list(ctx, filepath, limit, kml):
                     positions_west  = []
                     positions_east  = []
                     current_time    = start_time
+                    separation      = None
                     while current_time <= end_time:
                         time_swath          = XV_Time()
                         time_swath.type     = XV_UTC_TYPE
@@ -404,6 +414,23 @@ def list(ctx, filepath, limit, kml):
                                 data_elem.set('name', attr_name)
                                 etree.SubElement(data_elem, 'value').text = str(attr_value)
                     
+                    data_elem = etree.SubElement(extended_data, 'Data')
+                    data_elem.set('name', 'duration')
+                    etree.SubElement(data_elem, 'displayName').text = 'Duration'
+                    etree.SubElement(data_elem, 'value').text       = str(duration)
+
+                    if duration and duration < DATATAKE_MINIMUM_LENGTH:
+                        logger.warning(f"Group ID: {group_id} / {dt_type} / {start_time} - Datatake minimum length not respected: {duration}")
+
+                    # Add the separation
+                    if separation is not None:
+                        data_elem = etree.SubElement(extended_data, 'Data')
+                        data_elem.set('name', 'separation_to_next')
+                        etree.SubElement(data_elem, 'displayName').text = 'Separation to Next Datatake'
+                        etree.SubElement(data_elem, 'value').text       = str(separation)
+                        if ( (separation + DATATAKE_MARGIN_SEPARATION) < DATATAKE_MINIMUM_SEPARATION ):
+                            logger.warning(f"Separation not respected between datatakes: {separation} for Group ID: {group_id}")
+
                     # Create Polygon with LinearRing connecting all positions
                     # polygon         = etree.SubElement(placemark, 'Polygon')
                     # outer_boundary  = etree.SubElement(polygon, 'outerBoundaryIs')
@@ -561,8 +588,8 @@ def search(filepath, event_id, event_type, orbit, start, end, limit, output_json
                 if 'T' not in end:
                     end = end + 'T23:59:59'
                 
-                start_dt = datetime.fromisoformat(start.replace('Z', '+00:00')).replace(tzinfo=timezone.utc)
-                end_dt = datetime.fromisoformat(end.replace('Z', '+00:00')).replace(tzinfo=timezone.utc)
+                start_dt  = datetime.fromisoformat(start.replace('Z', '+00:00')).replace(tzinfo=timezone.utc)
+                end_dt    = datetime.fromisoformat(end.replace('Z', '+00:00')).replace(tzinfo=timezone.utc)
                 
                 results = [e for e in results if start_dt <= e.time <= end_dt]
                 click.echo(f"Filtering by time: {start} to {end}\n", err=True)
