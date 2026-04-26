@@ -35,11 +35,13 @@ from eocfi.api    import version as eocfi_version
 from eocfi.api_xo import xo_check_library_version
 
 FLX_SDF = 'FLX_OPER_MPL_SW_DEF_00000000T000000_99999999T999999_0001.EOF'
-FLX_OSC = 'FLX_OPER_MPL_ORBSCT_20240204T220001_99999999T999999_0001.EOF'
+# FLX_OSC = 'FLX_OPER_MPL_ORBSCT_20240204T220001_99999999T999999_0001.EOF'
+FLX_OSC = 'FLX_OPER_MPL_ORBSCT_20230703T000001_99999999T999999_0001.EOF'
 
 DATATAKE_MINIMUM_LENGTH     = timedelta(seconds = 32)
 DATATAKE_MINIMUM_SEPARATION = timedelta(seconds = 60)
 DATATAKE_MARGIN_SEPARATION  = timedelta(seconds = 1)
+
 # -----------------------------------------------------------------------------
 
 def print_version(ctx, param, value):
@@ -64,8 +66,8 @@ def setup_debug_logging(debug_enabled):
         logger.debug("Debug logging enabled")
 
 @click.group()
-@click.option('--version', is_flag=True, callback=print_version, expose_value=False, is_eager=True, help='Show version and library information.')
-@click.option('--debug', is_flag=True, help='Enable debug logging.')
+@click.option('--version', is_flag = True, callback=print_version, expose_value=False, is_eager=True, help='Show version and library information.')
+@click.option('--debug',   is_flag = True, help = 'Enable debug logging.')
 @click.pass_context
 def cli(ctx, debug):
     """
@@ -110,10 +112,11 @@ def info(filepath):
 
 @cli.command()
 @click.argument('filepath', type=click.Path(exists=True))
-@click.option('--limit', '-l', type=int, default = 10, help='Number of events to display')
-@click.option('--kml', is_flag=True, help='Output datatakes as KML')
+@click.option('--limit', '-l', type=int, default = 10   , help = 'Number of events to display')
+@click.option('--kml',      is_flag=True                , help = 'Output datatakes as KML')
+@click.option('--orbit', '-o', type=str                 , help = 'Orbit Scenario File')
 @click.pass_context
-def list(ctx, filepath, limit, kml):
+def list(ctx, filepath, limit, kml, orbit):
     """List events from a planning file."""
 
     import fcops
@@ -127,7 +130,11 @@ def list(ctx, filepath, limit, kml):
     from eocfi.c_types import XV_Time
     from eocfi.constants import XL_MODEL_DEFAULT, XP_STD_INIT, XV_UTC_TYPE, XV_FILE_SDF
 
-    path_orb_sct    = importlib.resources.files(fcops) / 'data' / FLX_OSC
+    if orbit == None or orbit == '':
+        path_orb_sct = importlib.resources.files(fcops) / 'data' / FLX_OSC
+    else:
+        path_orb_sct = orbit
+        
     path_sdf        = importlib.resources.files(fcops) / 'data' / FLX_SDF
     debug           = ctx.obj.get('debug', False) if ctx.obj else False
     

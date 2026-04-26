@@ -125,9 +125,25 @@ class TestCLIIntegration(unittest.TestCase):
             self.skipTest("CLI command not available")
 
         cmd = 'fcops_mpf_ppf2kml list test/data/FLX_OPER_MPL_NPPF___20260901T000000_20260928T000000_0001.xml'
-        
         logger.debug(cmd)
 
+
+    def test_process_nppf_kml(self):
+        """Test that the --version option shows version and library information."""
+        if not self.cli_command:
+            self.skipTest("CLI command not available")
+
+        cmd = 'fcops_mpf_ppf2kml list --kml test/data/FLX_OPER_MPL_NPPF___20260901T000000_20260928T000000_0001.xml > test/data/FLX_OPER_MPL_NPPF___20260901T000000_20260928T000000_0001.kml'
+        logger.debug(cmd)
+
+    
+    def test_process_nppf_kml_orbit(self):
+        """Test that the --version option shows version and library information."""
+        if not self.cli_command:
+            self.skipTest("CLI command not available")
+
+        cmd = 'fcops_mpf_ppf2kml list --orbit test/data/FLX_OPER_MPL_ORBSCT_20230703T000001_99999999T999999_0001.EOF --kml test/data/FLX_OPER_MPL_NPPF___20230703T000000_20230730T000000_0002.xml > test/data/FLX_OPER_MPL_NPPF___20230703T000000_20230730T000000_0002.kml'
+        logger.debug(cmd)
 
 
 if __name__ == '__main__':

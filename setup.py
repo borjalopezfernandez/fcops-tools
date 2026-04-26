@@ -1,34 +1,37 @@
 """
-FCOPS Tools - FLEX Mission Planning File Parser and Tools
+FCOPS Tools - Operations Tools
 
 Installation:
     pip install -e . 
     pip install wheel
     python setup.py bdist_wheel
 
-Usage:
-    fcops-ppf-parser --help
 """
+
 from setuptools import setup, find_packages
 
 setup(
     license_files           =   ['LICENSE'],
-    python_requires         =   ">=3.12",
-    name                    =   "fcops",
-    version                 =   "0.0.2",
-    description             =   "FLEX Core Payload Data Ground Segment Operations Service",
-    author                  =   "FCOPS Team",
+    python_requires         =   '>=3.12',
+    name                    =   'fcops',
+    version                 =   '0.0.4',
+    description             =   'FLEX Core Payload Data Ground Segment Operations Service',
+    author                  =   'FCOPS Team',
     long_description        =   open('README.md', encoding='utf-8').read() if False else "FLEX Mission Operations Tools",
     packages                =   ['fcops', 'fcops.data'],
-    package_dir             =   {"fcops": "src/fcops", "fcops.data": "src/fcops/data"},
+    package_dir             =   {'fcops': 'src/fcops', 'fcops.data': 'src/fcops/data'},
     package_data            =   {'fcops': ['data/*']},
     include_package_data    =   True,
-    scripts                 =   ['src/fcops/fcops_mpf_ppf2kml',
-                                 'src/fcops/fcops_maap_query_datatake',
-                                 'src/fcops/fcops_maap_query_product'
+    scripts                 =   [
+                                    'src/fcops/fcops_cams_query_collection',
+                                    'src/fcops/fcops_mpf_ppf2kml',
+                                    'src/fcops/fcops_maap_query_datatake',
+                                    'src/fcops/fcops_maap_query_product'
                                 ],
     install_requires        =   [
 #        'eocfi',
+        'cdsapi',
+        'ecmwf-datastores-client',
         'click>=7.0',
         'pystac',
         'pytest',

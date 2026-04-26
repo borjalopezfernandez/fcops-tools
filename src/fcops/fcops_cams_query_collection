@@ -1,0 +1,204 @@
+#!/usr/bin/env python
+
+'''
+
+'''
+from http import client
+import os
+import json
+import inspect
+import cdsapi
+from pystac_client import Client
+
+import logging
+
+from loguru import logger
+logger = logger.patch(lambda record: record.update(name=record["file"].name))
+
+class InterceptHandler(logging.Handler):
+    def emit(self, record: logging.LogRecord) -> None:
+        # Get corresponding Loguru level if it exists.
+        try:
+            level: str | int = logger.level(record.levelname).name
+        except ValueError:
+            level = record.levelno
+
+        # Find caller from where originated the logged message.
+        frame, depth = inspect.currentframe(), 0
+        while frame:
+            filename   = frame.f_code.co_filename
+            is_logging = filename == logging.__file__
+            is_frozen = "importlib" in filename and "_bootstrap" in filename
+            if depth > 0 and not (is_logging or is_frozen):
+                break
+            frame = frame.f_back
+            depth += 1
+
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
+logging.basicConfig(handlers = [InterceptHandler()], level = 'INFO', force = True)
+
+from importlib.metadata import version as package_version
+
+import click
+CONTEXT_SETTINGS = {"help_option_names": ['-h', '--help'], "max_content_width" : 220}
+
+@click.command(context_settings=CONTEXT_SETTINGS, no_args_is_help = False)
+# @click.command(context_settings=CONTEXT_SETTINGS, no_args_is_help = True)
+@click.option('--version', '-v',     is_flag = True, default = False,    help = 'It shows the version')
+@click.option('--collection_id', '-c',                                   help = 'collection id: e.g. "cams-global-atmospheric-composition-forecasts"')
+@click.option('--Collection', '-C',  is_flag = True, default = False,    help = 'It shows the collections')
+@click.option('--Silent', '-S',      is_flag = True, default = False,    help = 'Avoid logging messages')
+@click.option('--Debug', '-D',       is_flag = True, default = False,    help = 'Debug flag for verbose messages')
+
+def query_collection(version: bool, collection_id: str, collection: bool, silent: bool, debug: bool):
+
+    """
+    \b
+    Query CAMS API for product metadata extraction.
+    > https://cds.climate.copernicus.eu/api
+    \b
+
+    """    
+
+    '''
+        > /home/borja/.ecmwfdatastoresrc
+        > /home/borja/.cdsapirc
+    '''
+
+    logger.info('banger!')
+
+    if version == True:
+        print(f"{os.path.basename(__file__)} - {package_version('fcops')}")
+        exit(0)
+
+
+    '''
+    
+    
+    '''
+
+    from ecmwf.datastores import Client
+    client = Client()
+    client.check_authentication()
+
+    logger.info('banger1!')
+
+    collections     = client.get_collections(sortby = 'update')
+    collection_ids  = []
+    while collections is not None:
+        collection_ids.extend(collections.collection_ids)
+        collections = collections.next
+        
+    if collection == True:
+        for collection_id in collection_ids:
+            collection = client.get_collection(collection_id)
+            print(f'{collection.id}')
+        exit(0)
+
+    if collection_id is None or collection_id == "":
+        print("Please provide a collection id using --collection_id or -c option.")
+        exit(0)
+
+    collection = client.get_collection(collection_id)
+
+    if debug == True:
+        print(f'Collection ID: {collection.id}')
+        print()
+        print(f'Title: {collection.title}')
+        print()
+        # print(f'Description: {collection.description}')
+        # print()
+        print(f'Published at: {collection.published_at}')
+        print()
+        print(f'Updated at: {collection.updated_at}')
+        print()
+        print(f'start: {collection.begin_datetime}')
+        print()
+        print(f'end: {collection.end_datetime}')
+        print()
+
+    request = {
+                    "variable": [
+                        'total_aerosol_optical_depth_550nm',
+                        'total_aerosol_optical_depth_670nm',
+                        'total_aerosol_optical_depth_865nm'
+                    ],
+                    "date": ["2026-04-26"],
+                    "time": ["00:00"],
+                    "leadtime_hour": [ '0','1','2','3','4','5','6','7','8','9','10','11','12' ],
+                    "type": ['forecast'],
+                    "area": [75, -180, -56, 180],
+                    "data_format": "netcdf_zip"
+    }
+
+    constrained_request = client.apply_constraints(collection_id, request)
+
+    print(len(constrained_request))
+
+    print()
+
+    print(constrained_request.keys())
+
+    print()
+    
+    '''
+    for variable in constrained_request['variable']:
+        print(variable)
+    '''
+
+
+    print(constrained_request['leadtime_hour'])
+
+    print()
+
+    print(constrained_request['pressure_level'])
+
+    print(constrained_request['date'])
+
+    print()
+
+    print(len(constrained_request['date']))
+
+    print()
+
+    print(constrained_request['date'][-1])
+
+    try:
+        client.retrieve(collection_id, request, target='target_1.zip')
+    except Exception as e:
+        print(f"Error during retrieval: {e}")
+
+    exit(0)
+
+    c = cdsapi.Client()
+    dataset = 'cams-global-atmospheric-composition-forecasts'
+    request = {
+                    "variable": [
+                    "total_aerosol_optical_depth_550nm",
+                    "total_aerosol_optical_depth_670nm",
+                    "total_aerosol_optical_depth_865nm"
+                    ],
+                    "date": ["2026-04-26"],
+                    "time": ["00:00"],
+                    "leadtime_hour": [ "0","1","2","3","4","5","6","7","8","9","10","11","12" ],
+                    "type": ["forecast"],
+                    "area": [75, -180, -56, 180],
+                    "data_format": "netcdf_zip"
+        }
+    target = "cams_20260426.zip"
+    c.retrieve(dataset, request, target)
+
+    exit(0)
+
+
+
+def version():
+    return package_version('fcops')
+
+if __name__ == '__main__':
+    print('pedo')
+    query_collection()
+
+
+exit(0)
