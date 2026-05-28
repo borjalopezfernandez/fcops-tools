@@ -110,6 +110,12 @@ def info(filepath):
 
 # -----------------------------------------------------------------------------
 
+'''
+
+fcops_mpf_ppf2kml list --orbit test/data/FLX_OPER_MPL_ORBSCT_20230703T000001_99999999T999999_0001.EOF --kml test/data/FLX_OPER_MPL_NPPF___20230703T000000_20230730T000000_0002.xml > test/data/FLX_OPER_MPL_NPPF___20230703T000000_20230730T000000_0002.kml
+
+'''
+
 @cli.command()
 @click.argument('filepath', type=click.Path(exists=True))
 @click.option('--limit', '-l', type=int, default = 10   , help = 'Number of events to display')
@@ -186,6 +192,11 @@ def list(ctx, filepath, limit, kml, orbit):
         # -----------------------------------------------------------
         # Obtain the datatakes from the grouped events
         # Group events with calibrations can lead to various datatakes
+
+        last_calib_id       = None
+        last_calib_id_eob   = None
+        last_calib_id_cal   = None
+
         datatakes = []
         for group_id, events in group_events.items():
             event_ids       = {e.event_id for e in events}
@@ -197,9 +208,16 @@ def list(ctx, filepath, limit, kml, orbit):
             # Check for calibration datatakes
             has_fpcal       = 'FPCAL_ID' in event_ids
             has_ftocalib    = 'FTOCALIB' in event_ids
+
+            # Other requests
             has_facqtime    = 'FACQTIME' in event_ids
+            has_facqlinr    = 'FACQLINR' in event_ids
+
+            # CU - Attitude
             has_cu_pos_dark = 'FCUDARK_' in event_ids
+            has_cu_pos_sun  = 'FCUSUN__' in event_ids
             has_cu_nadir    = 'FCUNADIR' in event_ids
+            has_cu_reset    = 'FCURESET' in event_ids
 
             # Transition to configuration
             has_ftocnfg     = 'FTOCNFG_' in event_ids
@@ -209,10 +227,30 @@ def list(ctx, filepath, limit, kml, orbit):
                 fpobs_time      = None
                 ftoearth_time   = None
                 ftocnfg_time    = None
+                # Identifier of calibration datatake
+                calib_id_eob    = None
                 
+                if has_cu_pos_sun == True:
+                    logger.warning(f'Unexpected Attitude SUN for FTOEARTH datatake')
+
+                if has_cu_pos_dark == True:
+                    logger.warning(f'Unexpected Attitude DARK for FTOEARTH datatake')
+
+                if has_cu_reset == True:
+                    logger.warning(f'Unexpected Attitude RESET for FTOEARTH datatake')
+
                 for ev in events:
                     if ev.event_id == 'FPOBS_ID':
                         fpobs_time = ev.time
+                        if debug == True:
+                            logger.debug(f'CALIB_ID_EOB={ev.parameters.get('CALIB_ID_EOB', 0)}')
+                        current_calib_id = int( ev.parameters.get('CALIB_ID_EOB', 0) )
+                        if last_calib_id == None:
+                            last_calib_id = current_calib_id
+                        else:
+                            if (last_calib_id + 1) != current_calib_id:
+                                logger.warning(f'CALIB_ID_EOB {current_calib_id} breaks sequence wrt {last_calib_id}')
+                            last_calib_id = current_calib_id
                     elif ev.event_id == 'FTOEARTH':
                         ftoearth_time = ev.time
                     elif ev.event_id.startswith('FTOCNFG_'):
@@ -226,12 +264,23 @@ def list(ctx, filepath, limit, kml, orbit):
             
             elif has_fpcal and has_ftocalib and has_ftocnfg:
                 
+                if has_facqlinr == True:
+                    logger.info(f'Group {group_id} has Linearity Calibration')
+
+                if has_cu_pos_dark == True:
+                    logger.info(f'Group {group_id} has Attitude DARK')
+
+                if has_cu_pos_sun == True:
+                    logger.info(f'Group {group_id} has Attitude SUN')
+
                 fpcal_id_event  = None
                 # Calculate duration as difference between FTOCALIB and FTOCNFG_
                 fpcal_time      = None
                 ftocalib_time   = None
                 ftocnfg_time    = None
-                
+                # Identifier of calibration datatake
+                calib_id_cal    = None
+
                 # group calibrations have various FPCAL_ID events to enable & disable cal flags
                 # > "FPCAL_ID" group_id="xxxx" parameter_count="7" CALIB_ID_CAL="425" HR1_CAL_TYPE="1" HR1_CAL_ST_CAL="11" HR2_CAL_TYPE="1" HR2_CAL_ST_CAL="11" LR_CAL_TYPE="1" LR_CAL_ST_CAL="11"/>
                 # > "FPCAL_ID" group_id="xxxx" parameter_count="7" CALIB_ID_CAL="426" HR1_CAL_TYPE="1" HR1_CAL_ST_CAL="51" HR2_CAL_TYPE="1" HR2_CAL_ST_CAL="51" LR_CAL_TYPE="1" LR_CAL_ST_CAL="51"/>
@@ -243,6 +292,15 @@ def list(ctx, filepath, limit, kml, orbit):
                     # logger.debug(f"Calibration event: {ev.event_id} at {ev.time}")
                     list_cal_events.append(ev)
                     if ev.event_id == 'FPCAL_ID':
+                        if debug == True:
+                            logger.debug(f'CALIB_ID_CAL={ev.parameters.get('CALIB_ID_CAL', 0)}')
+                        current_calib_id = int( ev.parameters.get('CALIB_ID_CAL', 0) )
+                        if last_calib_id == None:
+                            last_calib_id = current_calib_id
+                        else:
+                            if (last_calib_id + 1) != current_calib_id:
+                                logger.warning(f'CALIB_ID_CAL {current_calib_id} breaks sequence wrt {last_calib_id}')
+                            last_calib_id = current_calib_id
                         fpcal_time      = ev.time
                         fpcal_id_event  = ev
                     elif ev.event_id == 'FTOCALIB':
@@ -267,7 +325,7 @@ def list(ctx, filepath, limit, kml, orbit):
 
         if datatakes:
             
-            sorted_datatakes = sorted(datatakes, key=lambda x: x[4] if x[4] else float('inf'))
+            sorted_datatakes  = sorted(datatakes, key=lambda x: x[4] if x[4] else float('inf'))
             
             if kml:
                 # Generate KML
@@ -311,8 +369,10 @@ def list(ctx, filepath, limit, kml, orbit):
                         time_swath.type     = XV_UTC_TYPE
                         time_swath.utc_time = eocfi.converters.datetime_utc_to_mjd2000(current_time)
                         pos                 = xv_swathpos_compute(time_swath, False)
+                        '''
                         if debug == True:
                             logger.debug(f"Computed position for {current_time}: {pos}")
+                        '''
 
                         # Avoid the swath middle point pos[1][1]
                         positions_west.append(pos[1][0])
@@ -362,9 +422,8 @@ def list(ctx, filepath, limit, kml, orbit):
                             break
                     
                     # Add ExtendedData with parameter and event attributes
-                    extended_data = etree.SubElement(placemark, 'ExtendedData')
-                    
-                    data_elem = etree.SubElement(extended_data, 'Data')
+                    extended_data   = etree.SubElement(placemark, 'ExtendedData')
+                    data_elem       = etree.SubElement(extended_data, 'Data')
                     data_elem.set('name', 'satellite')
                     etree.SubElement(data_elem, 'value').text       = 'FLEX'
                     etree.SubElement(data_elem, 'displayName').text = 'Satellite'
@@ -448,25 +507,30 @@ def list(ctx, filepath, limit, kml, orbit):
                     
                     # ---------------------------------------------------------
                     # Build coordinates list from all positions, connecting the first point of each swath
-
                     # Need to go backwards from the end to the start to connect the last point of each swath, 
                     # otherwise the ring will be twisted and not closed properly
 
                     coords = []
+                    '''
                     if debug == True:
                         logger.debug("")
                         logger.debug(f"[{start_time} - {end_time} - {group_id}] Adding coordinates for position: {pos}")
-                    
+                    '''
+                        
                     for pos in positions_east:
                         coord = f"{pos['lon']},{pos['lat']},{pos['alt']}"
+                        '''
                         if debug == True:
                             logger.info(f"Adding coordinate: {coord}")
+                        '''
                         coords.append(coord)
 
                     for pos in reversed(positions_west):
                         coord = f"{pos['lon']},{pos['lat']},{pos['alt']}"
+                        '''
                         if debug == True:
                             logger.info(f"Adding coordinate: {coord}")
+                        '''
                         coords.append(coord)
 
                     coord = f"{positions_east[0]['lon']},{positions_east[0]['lat']},{positions_east[0]['alt']}"
