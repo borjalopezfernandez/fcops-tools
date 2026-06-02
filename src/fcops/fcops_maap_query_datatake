@@ -38,8 +38,45 @@ prev_item_id        = None
 def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, version: bool, silent: bool, debug: bool):
 
     """
-    \b
+    
     Query MAAP catalogue in Collection FLEXL1CommissioningProducts10 for data-take information within some time interval and product type within the following collections:
+
+    \b
+    FLEXRAWL0CALVALProducts10:
+        - L0__DEFDAR
+        - L0__DEFSUN
+        - L0__NAVATT
+        - L0__VAU_TM
+        - L0__OBS___
+        - RAW_XS_HR1
+        - RAW_XS_HR2
+        - RAW_XS_LR_
+        - RAW_XS_OBC
+    \b
+
+    \b
+    FLEXL1CommissioningProducts10:
+        - L1B_OBS___
+        - ANC_ROTLOS
+        - ANC_ORBRES
+        - ANC_ATTRES
+        - RAC_DARKSR
+        - RAC_DRKSTR
+        - RAC_DEFSUN
+        - L1C_FLXSYN
+    \b
+    
+    \b
+    FLEXL2Products10:
+        - L2__FLXSYN
+    \b
+
+    \b
+    FLEXAuxiliaryProducts10:
+        - AUX_IERS_A
+        - AUX_IERS_B
+        - AUX_UTMTIL
+    \b
 
     CSV file naming convention is:
         fcops_maap_query_datatake_<product_type>_<start_datetime>_<end_datetime>_C<current_datetime>.csv
@@ -48,7 +85,7 @@ def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, v
         datatake_id, product_type, product_id, sensing_start, sensing_end
 
     Auxiliary products are datatake-less and no grouping is performed.
-    \b
+    
 
     """
 
@@ -64,12 +101,12 @@ def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, v
     str_datetime_start  = start
     str_datetime_end    = end
     date_format         = '%Y-%m-%dT%H:%M:%S%z'
-    time_delta          = timedelta(hours = 1)
+    time_delta          = timedelta(hours = 2)
 
-    if type in ['ANC_ORBRES', 'ANC_ATTRES']:
+    if type in ['L0__OBS___', 'L0__VAU_TM', 'L0__DEFDAR', 'L0__DEFSUN', 'L0__NAVATT', 'ANC_ORBRES', 'ANC_ATTRES', 'ANC_ROTLOS', 'RAW_XS_HR1', 'RAW_XS_HR2', 'RAW_XS_LR_', 'RAW_XS_OBC']:
         time_delta = timedelta(days = 1)
     
-    if type in ['MPL_ORBPRE']:
+    if type in ['MPL_ORBPRE', 'AUX_IERS_A', 'AUX_IERS_B', 'AUX_UTMTIL']:
         time_delta = timedelta(days = 7)
 
     datetime_start      = None
@@ -137,7 +174,17 @@ def query_biomass_products(datetime_start: datetime, datetime_end: datetime, typ
     str_datetime_end   = datetime_end.strftime(date_format)
     URL_LANDING_PAGE   = 'https://catalog.maap.eo.esa.int/catalogue/'
     datetime_tom_phase = datetime(2025, 11, 21, 0, 29, 45, tzinfo = pytz.utc)
+    
     flex_collections = ['FLEXL1CommissioningProducts10']
+
+    if type in ['L0__DEFDAR', 'L0__DEFSUN', 'L0__NAVATT', 'L0__VAU_TM', 'L0__OBS___', 'RAW_XS_HR1', 'RAW_XS_HR2', 'RAW_XS_LR_', 'RAW_XS_OBC']:
+        flex_collections = ['FLEXRAWL0CALVALProducts10']
+    
+    if type in ['L2__FLXSYN']:
+        flex_collections = ['FLEXL2Products10']
+
+    if type in ['AUX_IERS_A', 'AUX_IERS_B', 'AUX_UTMTIL']:
+        flex_collections = ['FLEXAuxiliaryProducts10']
 
     '''
     # Mapping of product type to collections to be done in the future

@@ -66,11 +66,13 @@ def query_collection(version: bool, collection_id: str, collection: bool, silent
         > /home/borja/.cdsapirc
     '''
 
-    logger.info('banger!')
-
     if version == True:
         print(f"{os.path.basename(__file__)} - {package_version('fcops')}")
         exit(0)
+
+    if debug == True:
+        logger.info('Setting debug mode ON')
+        logging.basicConfig(handlers = [InterceptHandler()], level = 'DEBUG', force = True)
 
 
     '''
@@ -125,7 +127,7 @@ def query_collection(version: bool, collection_id: str, collection: bool, silent
                         'total_aerosol_optical_depth_865nm'
                     ],
                     "date": ["2026-04-26"],
-                    "time": ["00:00"],
+                    "time": ["12:00"],
                     "leadtime_hour": [ '0','1','2','3','4','5','6','7','8','9','10','11','12' ],
                     "type": ['forecast'],
                     "area": [75, -180, -56, 180],
@@ -165,7 +167,7 @@ def query_collection(version: bool, collection_id: str, collection: bool, silent
     print(constrained_request['date'][-1])
 
     try:
-        client.retrieve(collection_id, request, target='target_1.zip')
+        client.retrieve(collection_id, request, target='target_2.zip')
     except Exception as e:
         print(f"Error during retrieval: {e}")
 

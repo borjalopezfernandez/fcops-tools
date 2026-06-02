@@ -37,6 +37,20 @@ def test_options(print_separator):
     logger.info(f"END : {sys._getframe().f_code.co_name} / {version('fcops')}")
 
 
+def test_GSV_L0__OBS___(print_separator):
+    """
+    GIVEN test_conversion
+    WHEN 
+    THEN
+    """
+    logger.info(f"START : {sys._getframe().f_code.co_name} / {version('fcops')}")
+    cmd             = f'fcops_maap_query_datatake --type L0__OBS___ --start 2023-07-12T07:00:00Z --end 2023-07-12T09:00:00Z'
+    logger.info(cmd)
+    exit = os.system(cmd)
+    assert(exit == 0)
+    logger.info(f"END : {sys._getframe().f_code.co_name} / {version('fcops')}")
+
+
 def test_GSV_L1B_OBS___(print_separator):
     """
     GIVEN test_conversion
