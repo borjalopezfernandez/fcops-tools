@@ -73,9 +73,15 @@ def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, v
 
     \b
     FLEXAuxiliaryProducts10:
-        - AUX_IERS_A
-        - AUX_IERS_B
-        - AUX_UTMTIL
+        - AUX_IERS_A (IERS bulletin A)
+        - AUX_IERS_B (IERS bulletin B)
+        - AUX_S3_CLM (S3 coastal line mask)
+        - AUX_S3_CLU (S3 sun glint risk mask)
+        - AUX_S3_LWM (S3 land water mask)
+        - AUX_S3_OOM (S3 open ocean mask)
+        - AUX_S3_TRM (S3 tidal region mask)
+        - AUX_UTMTIL (UTM tiles)
+
     \b
 
     CSV file naming convention is:
@@ -106,8 +112,11 @@ def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, v
     if type in ['L0__OBS___', 'L0__VAU_TM', 'L0__DEFDAR', 'L0__DEFSUN', 'L0__NAVATT', 'ANC_ORBRES', 'ANC_ATTRES', 'ANC_ROTLOS', 'RAW_XS_HR1', 'RAW_XS_HR2', 'RAW_XS_LR_', 'RAW_XS_OBC']:
         time_delta = timedelta(days = 1)
     
-    if type in ['MPL_ORBPRE', 'AUX_IERS_A', 'AUX_IERS_B', 'AUX_UTMTIL']:
+    if type in ['MPL_ORBPRE', 'AUX_IERS_A', 'AUX_IERS_B']:
         time_delta = timedelta(days = 7)
+
+    if type in ['AUX_UTMTIL', 'AUX_S3_CLM', 'AUX_S3_CLU', 'AUX_S3_LWM', 'AUX_S3_OOM', 'AUX_S3_TRM']:
+        time_delta = timedelta(days = 30)
 
     datetime_start      = None
     datetime_end        = None
@@ -117,6 +126,10 @@ def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, v
         datetime_end        = datetime.strptime(str_datetime_end, date_format)
     except Exception as e:
         print(f'Error parsing input datetimes: {e}')
+        exit(1)
+
+    if datetime_start >= datetime_end:
+        print('Error: start datetime must be before end datetime')
         exit(1)
 
     delta_total = datetime_end - datetime_start
@@ -183,7 +196,7 @@ def query_biomass_products(datetime_start: datetime, datetime_end: datetime, typ
     if type in ['L2__FLXSYN']:
         flex_collections = ['FLEXL2Products10']
 
-    if type in ['AUX_IERS_A', 'AUX_IERS_B', 'AUX_UTMTIL']:
+    if type in ['AUX_IERS_A', 'AUX_IERS_B', 'AUX_UTMTIL', 'AUX_S3_CLM', 'AUX_S3_CLU', 'AUX_S3_LWM', 'AUX_S3_OOM', 'AUX_S3_TRM']:
         flex_collections = ['FLEXAuxiliaryProducts10']
 
     '''
