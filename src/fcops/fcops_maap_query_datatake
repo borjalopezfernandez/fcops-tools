@@ -166,7 +166,7 @@ def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, v
             query_end += time_delta
         else:
             query_end = datetime_end 
-        list_datatake_id += query_biomass_products(datetime_current, query_end, type, baseline, csv_writer, debug)
+        list_datatake_id += query_products_flex(datetime_current, query_end, type, baseline, csv_writer, debug)
         datetime_current = query_end
 
     if csv == True:
@@ -178,7 +178,7 @@ def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, v
         print(f'{datatake_id}')
 
 
-def query_biomass_products(datetime_start: datetime, datetime_end: datetime, type: str, baseline: str, csv_writer = None, debug = False):
+def query_products_flex(datetime_start: datetime, datetime_end: datetime, type: str, baseline: str, csv_writer = None, debug = False):
     global list_item_id
     global prev_item_id
     flex_collections = []
