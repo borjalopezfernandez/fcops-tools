@@ -45,9 +45,10 @@ def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, v
     FLEXRAWL0CALVALProducts10:
         - L0__DEFDAR
         - L0__DEFSUN
+        - L0__OBS___
         - L0__NAVATT
         - L0__VAU_TM
-        - L0__OBS___
+        - L0__INSTTM
         - RAW_XS_HR1
         - RAW_XS_HR2
         - RAW_XS_LR_
@@ -73,8 +74,12 @@ def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, v
 
     \b
     FLEXAuxiliaryProducts10:
+        - AUX_CCCRAD (CCDB yo!)
         - AUX_IERS_A (IERS bulletin A)
         - AUX_IERS_B (IERS bulletin B)
+        - AUX_GPRMOD (ML / gaussian process regression model)
+        - AUX_MACV2_ (Aerosol optical properties climatology)
+        - AUX_MET_F_ (ECMWF Met Forecast)
         - AUX_S3_CLM (S3 coastal line mask)
         - AUX_S3_CLU (S3 sun glint risk mask)
         - AUX_S3_LWM (S3 land water mask)
@@ -109,13 +114,13 @@ def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, v
     date_format         = '%Y-%m-%dT%H:%M:%S%z'
     time_delta          = timedelta(hours = 2)
 
-    if type in ['L0__OBS___', 'L0__VAU_TM', 'L0__DEFDAR', 'L0__DEFSUN', 'L0__NAVATT', 'ANC_ORBRES', 'ANC_ATTRES', 'ANC_ROTLOS', 'RAW_XS_HR1', 'RAW_XS_HR2', 'RAW_XS_LR_', 'RAW_XS_OBC']:
+    if type in ['L0__OBS___', 'L0__VAU_TM', 'L0__DEFDAR', 'L0__DEFSUN', 'L0__NAVATT', 'L0__INSTTM', 'ANC_ORBRES', 'ANC_ATTRES', 'ANC_ROTLOS', 'RAW_XS_HR1', 'RAW_XS_HR2', 'RAW_XS_LR_', 'RAW_XS_OBC', 'AUX_MET_F_']:
         time_delta = timedelta(days = 1)
     
     if type in ['MPL_ORBPRE', 'AUX_IERS_A', 'AUX_IERS_B']:
         time_delta = timedelta(days = 7)
 
-    if type in ['AUX_UTMTIL', 'AUX_S3_CLM', 'AUX_S3_CLU', 'AUX_S3_LWM', 'AUX_S3_OOM', 'AUX_S3_TRM']:
+    if type in ['AUX_UTMTIL', 'AUX_S3_CLM', 'AUX_S3_CLU', 'AUX_S3_LWM', 'AUX_S3_OOM', 'AUX_S3_TRM', 'AUX_GPRMOD', 'AUX_MACV2_', 'AUX_CCCRAD', 'AUX_FLOLUT']:
         time_delta = timedelta(days = 30)
 
     datetime_start      = None
@@ -190,13 +195,13 @@ def query_products_flex(datetime_start: datetime, datetime_end: datetime, type: 
     
     flex_collections = ['FLEXL1CommissioningProducts10']
 
-    if type in ['L0__DEFDAR', 'L0__DEFSUN', 'L0__NAVATT', 'L0__VAU_TM', 'L0__OBS___', 'RAW_XS_HR1', 'RAW_XS_HR2', 'RAW_XS_LR_', 'RAW_XS_OBC']:
+    if type in ['L0__DEFDAR', 'L0__DEFSUN', 'L0__NAVATT', 'L0__VAU_TM', 'L0__INSTTM', 'L0__OBS___', 'RAW_XS_HR1', 'RAW_XS_HR2', 'RAW_XS_LR_', 'RAW_XS_OBC']:
         flex_collections = ['FLEXRAWL0CALVALProducts10']
     
     if type in ['L2__FLXSYN']:
         flex_collections = ['FLEXL2Products10']
 
-    if type in ['AUX_IERS_A', 'AUX_IERS_B', 'AUX_UTMTIL', 'AUX_S3_CLM', 'AUX_S3_CLU', 'AUX_S3_LWM', 'AUX_S3_OOM', 'AUX_S3_TRM']:
+    if type in ['AUX_IERS_A', 'AUX_IERS_B', 'AUX_UTMTIL', 'AUX_S3_CLM', 'AUX_S3_CLU', 'AUX_S3_LWM', 'AUX_S3_OOM', 'AUX_S3_TRM', 'AUX_MET_F_', 'AUX_GPRMOD', 'AUX_MACV2_', 'AUX_CCCRAD', 'AUX_FLOLUT']:
         flex_collections = ['FLEXAuxiliaryProducts10']
 
     '''
