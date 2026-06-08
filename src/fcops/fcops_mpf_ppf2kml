@@ -15,6 +15,8 @@ from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
+import fcops
+
 from importlib.metadata import version as package_version
 
 from loguru import logger
@@ -125,8 +127,6 @@ fcops_mpf_ppf2kml list --orbit test/data/FLX_OPER_MPL_ORBSCT_20230703T000001_999
 def list(ctx, filepath, limit, kml, orbit):
     """List events from a planning file."""
 
-    import fcops
-    
     from eocfi.api_xl import xl_model_init
     from eocfi.api_xl import xl_time_ref_init_file
     from eocfi.api_xo import xo_orbit_init_file
@@ -319,7 +319,7 @@ def list(ctx, filepath, limit, kml, orbit):
 
                 if fpcal_id_event != None: # and fpcal_id_event != None and fpcal_id_event.parameters.get("HR1_CAL_TYPE", 0) == 1:
                     if fpcal_id_event.parameters.get("HR1_CAL_TYPE", 0) == 1:
-                        logger.warning(f"Orphan FPCAL_ID at {fpcal_time} / Group ID: {group_id} | missing FTOCALIB or FTOCNFG_ events to determine datatake")
+                        logger.warning(f"Orphan FPCAL_ID {current_calib_id} at {fpcal_time} / Group ID: {group_id} | missing FTOCALIB or FTOCNFG_ events to determine datatake")
 
         # -----------------------------------------------------------
 
@@ -379,10 +379,28 @@ def list(ctx, filepath, limit, kml, orbit):
                         positions_east.append(pos[1][2])
                         current_time += timedelta(seconds = 10)
                     
+                    # Extract calibration ID parameter and event(s) attributes
+                    if dt_type == 'observation':
+                        param_name          = 'CALIB_ID_EOB'
+                        event_id_to_find    = 'FPOBS_ID'
+                    else:  # calibration
+                        param_name          = 'CALIB_ID_CAL'
+                        event_id_to_find    = 'FPCAL_ID'
+                    
+                    param_value = None
+                    event_obj   = None
+
+                    # Find the CALIB_ID_xxx event: CALIB_ID_EOB | CALIB_ID_CAL
+                    for ev in events:
+                        if ev.event_id == event_id_to_find:
+                            param_value = ev.parameters.get(param_name)
+                            event_obj   = ev
+                            break
+
                     # Create single Placemark for datatake with LinearRing connecting start and end
                     parent_folder   = obs_folder if dt_type == 'observation' else cal_folder
                     subfolder       = etree.SubElement(parent_folder, 'Folder')
-                    etree.SubElement(subfolder, 'name').text = f'{dt_type.capitalize()} Datatake {start_time.strftime("%Y-%m-%d %H:%M:%S")}'
+                    etree.SubElement(subfolder, 'name').text = f'{dt_type.capitalize()} Datatake#{param_value} - {start_time.strftime("%Y-%m-%d %H:%M:%S")}'
                     
                     description = f'Type: {dt_type}\nDuration: {duration}\nStart: {start_time}\nEnd: {end_time}'
                     if idx < len(sorted_datatakes) - 1:
@@ -401,6 +419,13 @@ def list(ctx, filepath, limit, kml, orbit):
                     etree.SubElement(time_span, 'begin').text = start_time.isoformat()
                     etree.SubElement(time_span, 'end').text = end_time.isoformat()
                     
+                    # Add ExtendedData with parameter and event attributes
+                    extended_data   = etree.SubElement(placemark, 'ExtendedData')
+                    data_elem       = etree.SubElement(extended_data, 'Data')
+                    data_elem.set('name', 'satellite')
+                    etree.SubElement(data_elem, 'value').text       = 'FLEX'
+                    etree.SubElement(data_elem, 'displayName').text = 'Satellite'
+
                     # Extract calibration ID parameter and event(s) attributes
                     if dt_type == 'observation':
                         param_name          = 'CALIB_ID_EOB'
@@ -420,23 +445,19 @@ def list(ctx, filepath, limit, kml, orbit):
                             param_value = ev.parameters.get(param_name)
                             event_obj   = ev
                             break
-                    
-                    # Add ExtendedData with parameter and event attributes
-                    extended_data   = etree.SubElement(placemark, 'ExtendedData')
-                    data_elem       = etree.SubElement(extended_data, 'Data')
-                    data_elem.set('name', 'satellite')
-                    etree.SubElement(data_elem, 'value').text       = 'FLEX'
-                    etree.SubElement(data_elem, 'displayName').text = 'Satellite'
-
+                
                     # Add observation ID | calibration ID parameter
                     if param_value is not None:
                         data_elem = etree.SubElement(extended_data, 'Data')
                         data_elem.set('name', param_name)
                         etree.SubElement(data_elem, 'value').text = str(param_value)
+                    else:
+                        logger.debug('WTF')
+                        logger.debug(f'{event_id_to_find} not found')
                     
                     # Extract calibration ID parameter and event(s) attributes
+                    data_elem = etree.SubElement(extended_data, 'Data')
                     if dt_type == 'observation':
-                        data_elem = etree.SubElement(extended_data, 'Data')
                         data_elem.set('name', 'mode')
                         etree.SubElement(data_elem, 'displayName').text = 'Mode'
                         etree.SubElement(data_elem, 'value').text       = 'EOB'

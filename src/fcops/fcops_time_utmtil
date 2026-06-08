@@ -1,0 +1,285 @@
+#!/usr/bin/env python
+
+'''
+
+'''
+import os
+import json
+import importlib
+from tracemalloc import start
+import xml.etree.ElementTree as ET
+from datetime import datetime, timedelta
+
+import fcops
+
+try:
+    import eocfi
+except Exception as e:
+    print(f'Error importing eocfi: {e}')
+    print(f'Please install eocfi:') 
+    print('https://eop-cfi.esa.int/index.php/mission-cfi-software/eocfi-software')
+    exit(1)
+
+
+from eocfi.constants import XL_ASCII_CCSDSA
+from eocfi.constants import XL_PROC
+from eocfi.constants import XL_TIME_UTC
+from eocfi.constants import XV_FILE_SDF
+from eocfi.constants import XL_MODEL_DEFAULT
+from eocfi.constants import XF_HEADER_FORMAT_EOF
+
+from eocfi.api    import version as eocfi_version
+from eocfi.api_xo import xo_check_library_version
+from eocfi.api_xl import xl_time_ref_init_file
+from eocfi.api_xl import xl_time_processing_to_ascii
+from eocfi.api_xl import xl_time_ascii_to_processing
+from eocfi.api_xl import xl_position_on_orbit
+from eocfi.api_xo import xo_check_library_version
+from eocfi.api_xo import xo_verbose
+from eocfi.api_xo import xo_orbit_init_file
+from eocfi.api_xo import xo_orbit_get_val_time
+from eocfi.api_xo import xo_osv_compute
+from eocfi.api_xv import xv_swath_id_init
+from eocfi.api_xv import xv_stationvistime_compute
+from eocfi.api_xv import xv_swathpos_compute
+
+
+from loguru import logger
+logger = logger.patch(lambda record: record.update(name=record["file"].name))
+
+from importlib.metadata import version as package_version
+
+FLX_AUX_UTMTIL  = 'flx_aux_utmtil_20190101T010101_20450101T010101_20240610T115500_01.dbl'
+FLX_SDF         = 'FLX_OPER_MPL_SW_DEF_00000000T000000_99999999T999999_0001.EOF'
+FLX_OSC         = 'FLX_OPER_MPL_ORBSCT_20230703T000001_99999999T999999_0001.EOF'
+
+
+def _init_eocfi(debug: bool = False):
+    path_orb_sct = importlib.resources.files(fcops) / 'data' / FLX_OSC
+    path_sw_sdf  = importlib.resources.files(fcops) / 'data' / FLX_SDF
+
+    if debug == True:
+        logger.info(f'xl_time_ref_init_file {os.path.basename(str(path_orb_sct))}')
+   
+    try:
+        xl_time_ref_init_file(str(path_orb_sct), debug)
+    except Exception as error:
+        logger.error(f"Failed to init the time reference xl_time_ref_init_file with file {path_orb_sct}")
+        logger.error(error)
+        exit(99)
+
+    if debug == True:
+        logger.info(f'xo_verbose')
+        xo_verbose(debug)
+
+    if debug == True:
+        logger.info(f'xo_orbit_init_file {path_orb_sct}')
+    try:
+        xo_orbit_init_file(str(path_orb_sct), debug)
+    except Exception as error:
+        logger.error(f"Failed to init the orbit reference xo_orbit_init_file with file {os.path.basename(str(path_orb_sct))}")
+        logger.error(error)
+        if debug == True:
+            print(traceback.format_exc())
+        exit(99)
+
+    if debug == True:
+        logger.info(f'xv_swath_id_init {os.path.basename(str(path_sw_sdf))}')
+    swath_mode = XV_FILE_SDF
+    xv_swath_id_init(swath_mode, str(path_sw_sdf), debug)
+
+    return
+
+
+def _parse_bbox(bbox_str):
+    """Parse B_BOX string into list of (lat, lon) tuples."""
+    values = list(map(float, bbox_str.strip().split()))
+    # B_BOX format: lat1 lon1 lat2 lon2 lat3 lon3 lat4 lon4
+    return [(values[i], values[i+1]) for i in range(0, len(values), 2)]
+
+def _get_bboxes_by_tile_id(filepath):
+    """Return dict of {TILE_IDENTIFIER: [(lat, lon), ...]} from the .dbl XML file."""
+    tree = ET.parse(filepath)
+    root = tree.getroot()
+
+    result = {}
+    for tile in root.iter("TILE"):
+        tile_id = tile.findtext("TILE_IDENTIFIER")
+        bbox_str = tile.findtext("B_BOX")
+        if tile_id and bbox_str:
+            result[tile_id] = _parse_bbox(bbox_str)
+
+    return result
+
+
+
+import click
+CONTEXT_SETTINGS = {"help_option_names": ['-h', '--help'], "max_content_width" : 220}
+
+@click.command(context_settings=CONTEXT_SETTINGS, no_args_is_help = False)
+@click.option('--time-start',  '-s',    help = 'input time start UTC=20230724T120000 | (MJD2000) 8605.5')
+@click.option('--time-end',  '-e',      help = 'input time end   UTC=20230725T000000 | (MJD2000) 8606.0')
+@click.option('--version', '-v',     is_flag = True, default = False,    help = 'It shows the version')
+@click.option('--Silent', '-S',      is_flag = True, default = False,    help = 'Avoid logging messages')
+@click.option('--Debug', '-D',       is_flag = True, default = False,    help = 'Debug flag for verbose messages')
+
+
+def get_utmtil(time_start: str, time_end: str, version: bool, silent: bool, debug: bool):
+
+    """
+    \b
+    Get the UTM tile identifier and its bounding box coordinates.
+    \b
+
+    """    
+
+    if version == True:
+        print(f"{os.path.basename(__file__)} - {package_version('fcops')}")
+        print(f'eocfi - {eocfi_version()}')
+        xo_check_library_version()
+        exit(0)
+
+    _init_eocfi(debug)
+
+    exit(0)
+
+
+
+    if '=' in time_start:
+        match time_start.split('=')[0]:
+        
+            case 'MJD2000':
+                # ascii_id_out        = XL_ASCII_CCSDSA_COMPACT
+                ascii_id_out        = XL_ASCII_CCSDSA_MICROSEC
+                time_ref_in         = XL_TIME_UTC
+                proc_id_in          = XL_PROC
+                time_ref_out        = XL_TIME_UTC
+                processing_in       = float( time_start.split('=')[1] )
+                ascii_time          = xl_time_processing_to_ascii(proc_id_in,
+                                                time_ref_in,
+                                                processing_in,
+                                                ascii_id_out,
+                                                time_ref_out,
+                                                debug)
+                
+            case 'UTC':
+                ascii_id_in         = XL_ASCII_CCSDSA_COMPACT
+                time_ref_in         = XL_TIME_UTC
+                ascii_in            = time_start.split('=')[1]
+                proc_id_out         = XL_PROC
+                time_ref_out        = XL_TIME_UTC
+                mjd2000             = xl_time_ascii_to_processing(
+                                                ascii_id_in,
+                                                time_ref_in,
+                                                ascii_in,
+                                                proc_id_out,
+                                                time_ref_out,
+                                                debug)
+                time_start = mjd2000
+            case _:
+                logger.error(f'Time unit not supported or recognised for time_start: {time_start.split("=")[0]}')
+                if debug == True:
+                    raise Exception(f'Time unit not supported or recognised for time_start')
+                exit(99)
+    else:
+        time_start  = float(time_start)
+    
+
+    if '=' in time_end:
+        match time_end.split('=')[0]:
+        
+            case 'MJD2000':
+                # ascii_id_out        = XL_ASCII_CCSDSA_COMPACT
+                ascii_id_out        = XL_ASCII_CCSDSA_MICROSEC
+                time_ref_in         = XL_TIME_UTC
+                proc_id_in          = XL_PROC
+                time_ref_out        = XL_TIME_UTC
+                processing_in       = float( time_end.split('=')[1] )
+                ascii_time          = xl_time_processing_to_ascii(proc_id_in,
+                                                time_ref_in,
+                                                processing_in,
+                                                ascii_id_out,
+                                                time_ref_out,
+                                                debug)
+                
+            case 'UTC':
+                ascii_id_in         = XL_ASCII_CCSDSA_COMPACT
+                time_ref_in         = XL_TIME_UTC
+                ascii_in            = time_end.split('=')[1]
+                proc_id_out         = XL_PROC
+                time_ref_out        = XL_TIME_UTC
+                mjd2000             = xl_time_ascii_to_processing(
+                                                ascii_id_in,
+                                                time_ref_in,
+                                                ascii_in,
+                                                proc_id_out,
+                                                time_ref_out,
+                                                debug)
+                time_end = mjd2000
+            case _:
+                logger.error(f'Time unit not supported or recognised for time_end: {time_end.split("=")[0]}')
+                if debug == True:
+                    raise Exception(f'Time unit not supported or recognised for time_end')
+                exit(99)
+    else:
+        time_end = float(time_end)
+
+    # Variables for time conversion
+    ascii_id_out        = XL_ASCII_CCSDSA_COMPACT
+    time_ref_in         = XL_TIME_UTC
+    proc_id_in          = XL_PROC
+    time_ref_out        = XL_TIME_UTC  
+
+    ascii_time_validity_start = xl_time_processing_to_ascii(proc_id_in,
+                                              time_ref_in,
+                                              time_start,
+                                              ascii_id_out,
+                                              time_ref_out,
+                                              debug)
+
+    ascii_time_validity_end   = xl_time_processing_to_ascii(proc_id_in,
+                                              time_ref_in,
+                                              time_end,
+                                              ascii_id_out,
+                                              time_ref_out,
+                                              debug)
+
+    datetime_validity_start = datetime.datetime.strptime(ascii_time_validity_start, '%Y%m%dT%H%M%S')
+    datetime_validity_end   = datetime.datetime.strptime(ascii_time_validity_end, '%Y%m%dT%H%M%S')
+
+
+
+    str_datetime_start  = start
+    str_datetime_end    = end
+    date_format         = '%Y-%m-%dT%H:%M:%S'
+
+    datetime_start      = None
+    datetime_end        = None
+    
+    try:
+        datetime_start      = datetime.strptime(str_datetime_start, date_format)
+        datetime_end        = datetime.strptime(str_datetime_end, date_format)
+    except Exception as e:
+        print(f'Error parsing input datetimes: {e}')
+        exit(1)
+
+    if datetime_start >= datetime_end:
+        print('Error: start datetime must be before end datetime')
+        exit(1)
+
+    path_aux_utmtil = importlib.resources.files(fcops) / 'data' / FLX_AUX_UTMTIL
+    logger.debug(path_aux_utmtil)
+
+    utm_bboxes = _get_bboxes_by_tile_id(path_aux_utmtil)
+    for tile_id, corners in utm_bboxes.items():
+        print(f"{tile_id}: {corners}")
+
+
+def version():
+    return package_version('fcops')
+
+if __name__ == '__main__':
+    get_utmtil()
+
+
+exit(0)

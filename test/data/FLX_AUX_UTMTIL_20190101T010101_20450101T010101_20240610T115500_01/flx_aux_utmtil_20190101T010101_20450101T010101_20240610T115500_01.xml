@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet type="text/xsl" href="../schematron/schematron_skeleton_for_eop.xsl.xsl"?>
+<opt:EarthObservation xmlns:eop="http://www.opengis.net/eop/2.1" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:om="http://www.opengis.net/om/2.0" xmlns:opt="http://www.opengis.net/opt/2.1" xmlns:ows="http://www.opengis.net/ows/2.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" gml:id="FLX_AUX_UTMTIL_20190101T010101_20450101T010101_20240610T115500_01_1" xsi:schemaLocation="http://www.opengis.net/opt/2.1/xsd/opt.xsd">
+  <om:phenomenonTime>
+    <gml:TimePeriod gml:id="FLX_AUX_UTMTIL_20190101T010101_20450101T010101_20240610T115500_01_2">
+      <gml:beginPosition>2019-01-01T01:01:01.000Z</gml:beginPosition>
+      <gml:endPosition>2045-01-01T01:01:01.000Z</gml:endPosition>
+    </gml:TimePeriod>
+  </om:phenomenonTime>
+  <om:resultTime>
+    <gml:TimeInstant gml:id="FLX_AUX_UTMTIL_20190101T010101_20450101T010101_20240610T115500_01_3">
+      <gml:timePosition>2045-01-01T01:01:01.000Z</gml:timePosition>
+    </gml:TimeInstant>
+  </om:resultTime>
+  <om:procedure>
+    <eop:EarthObservationEquipment gml:id="FLX_AUX_UTMTIL_20190101T010101_20450101T010101_20240610T115500_01_4">
+      <eop:platform>
+        <eop:Platform>
+          <eop:shortName>FLEX</eop:shortName>
+        </eop:Platform>
+      </eop:platform>
+      <eop:instrument>
+        <eop:Instrument>
+          <eop:shortName>FLORIS</eop:shortName>
+        </eop:Instrument>
+      </eop:instrument>
+      <eop:sensor>
+        <eop:Sensor>
+          <eop:sensorType>OPTICAL</eop:sensorType>
+          <eop:operationalMode codeSpace="urn:esa:eop:FLORIS:operationalMode">AUX</eop:operationalMode>
+        </eop:Sensor>
+      </eop:sensor>
+      <eop:acquisitionParameters>
+        <eop:Acquisition>
+          <eop:orbitNumber>554</eop:orbitNumber>
+        </eop:Acquisition>
+      </eop:acquisitionParameters>
+    </eop:EarthObservationEquipment>
+  </om:procedure>
+  <om:observedProperty xsi:nil="true" nilReason="inapplicable"></om:observedProperty>
+  <om:featureOfInterest></om:featureOfInterest>
+  <om:result>
+    <eop:EarthObservationResult gml:id="FLX_AUX_UTMTIL_20190101T010101_20450101T010101_20240610T115500_01_5">
+      <eop:product>
+        <eop:ProductInformation>
+          <eop:fileName>
+            <ows:ServiceReference xlink:href="FLX_AUX_UTMTIL_20190101T010101_20450101T010101_20240610T115500_01">
+              <ows:RequestMessage></ows:RequestMessage>
+            </ows:ServiceReference>
+          </eop:fileName>
+          <eop:version></eop:version>
+        </eop:ProductInformation>
+      </eop:product>
+      <eop:product>
+        <eop:ProductInformation>
+          <eop:fileName>
+            <ows:ServiceReference xlink:href="./flx_aux_utmtil_20190101T010101_20450101T010101_20240610T115500_01.dbl">
+              <ows:RequestMessage></ows:RequestMessage>
+            </ows:ServiceReference>
+          </eop:fileName>
+        </eop:ProductInformation>
+      </eop:product>
+    </eop:EarthObservationResult>
+  </om:result>
+  <eop:metaDataProperty>
+    <eop:EarthObservationMetaData>
+      <eop:identifier>FLX_AUX_UTMTIL_20190101T010101_20450101T010101_20240610T115500_01</eop:identifier>
+      <eop:creationDate>2024-06-10T11:55:00.000Z</eop:creationDate>
+      <eop:modificationDate>2024-06-10T11:55:00.000Z</eop:modificationDate>
+      <eop:acquisitionType>OTHER</eop:acquisitionType>
+      <eop:productType>AUX_UTMTIL</eop:productType>
+      <eop:status>ARCHIVED</eop:status>
+      <eop:productQualityDegradationTag codeSpace="urn:esa:eop:FLEX:qcDegradationTags"></eop:productQualityDegradationTag>
+      <eop:processing>
+        <eop:ProcessingInformation>
+          <eop:processingCenter codeSpace="urn:esa:eop:FLEX:facility">NULL</eop:processingCenter>
+          <eop:processingMode codeSpace="urn:esa:eop:FLEX:processingModes">NOMINAL</eop:processingMode>
+        </eop:ProcessingInformation>
+      </eop:processing>
+      <eop:vendorSpecific>
+        <eop:SpecificInformation>
+          <eop:localAttribute>Cycle_Number</eop:localAttribute>
+          <eop:localValue>807</eop:localValue>
+        </eop:SpecificInformation>
+      </eop:vendorSpecific>
+      <eop:vendorSpecific>
+        <eop:SpecificInformation>
+          <eop:localAttribute>Relative_Orbit_Number</eop:localAttribute>
+          <eop:localValue>506</eop:localValue>
+        </eop:SpecificInformation>
+      </eop:vendorSpecific>
+      <eop:vendorSpecific>
+        <eop:SpecificInformation>
+          <eop:localAttribute>ANX_elapsed_time</eop:localAttribute>
+          <eop:localValue>735</eop:localValue>
+        </eop:SpecificInformation>
+      </eop:vendorSpecific>
+      <eop:vendorSpecific>
+        <eop:SpecificInformation>
+          <eop:localAttribute>Task_Table_Name</eop:localAttribute>
+          <eop:localValue>FLX_L0PF_TaskTable</eop:localValue>
+        </eop:SpecificInformation>
+      </eop:vendorSpecific>
+      <eop:vendorSpecific>
+        <eop:SpecificInformation>
+          <eop:localAttribute>Duration</eop:localAttribute>
+          <eop:localValue>437</eop:localValue>
+        </eop:SpecificInformation>
+      </eop:vendorSpecific>
+      <eop:vendorSpecific>
+        <eop:SpecificInformation>
+          <eop:localAttribute>Baseline</eop:localAttribute>
+          <eop:localValue>01</eop:localValue>
+        </eop:SpecificInformation>
+      </eop:vendorSpecific>
+    </eop:EarthObservationMetaData>
+  </eop:metaDataProperty>
+</opt:EarthObservation>

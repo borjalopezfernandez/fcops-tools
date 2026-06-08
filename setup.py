@@ -14,7 +14,7 @@ setup(
     license_files           =   ['LICENSE'],
     python_requires         =   '>=3.12',
     name                    =   'fcops',
-    version                 =   '0.0.6',
+    version                 =   '0.0.7',
     description             =   'FLEX Core Payload Data Ground Segment Operations Service',
     author                  =   'FCOPS Team',
     long_description        =   open('README.md', encoding='utf-8').read() if False else "FLEX Mission Operations Tools",
@@ -25,6 +25,7 @@ setup(
     scripts                 =   [
                                     'src/fcops/fcops_cams_query_collection',
                                     'src/fcops/fcops_mpf_ppf2kml',
+                                    'src/fcops/fcops_time_utmtil',
                                     'src/fcops/fcops_maap_query_datatake',
                                     'src/fcops/fcops_maap_query_product'
                                 ],

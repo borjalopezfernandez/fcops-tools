@@ -132,17 +132,24 @@ class TestCLIIntegration(unittest.TestCase):
         """Test that the --version option shows version and library information."""
         if not self.cli_command:
             self.skipTest("CLI command not available")
-
         cmd = 'fcops_mpf_ppf2kml list --kml test/data/FLX_OPER_MPL_NPPF___20260901T000000_20260928T000000_0001.xml > test/data/FLX_OPER_MPL_NPPF___20260901T000000_20260928T000000_0001.kml'
         logger.debug(cmd)
 
     
     def test_process_nppf_kml_orbit(self):
-        """Test that the --version option shows version and library information."""
+        """ test the orbit """
         if not self.cli_command:
             self.skipTest("CLI command not available")
-
         cmd = 'fcops_mpf_ppf2kml list --orbit test/data/FLX_OPER_MPL_ORBSCT_20230703T000001_99999999T999999_0001.EOF --kml test/data/FLX_OPER_MPL_NPPF___20230703T000000_20230730T000000_0002.xml > test/data/FLX_OPER_MPL_NPPF___20230703T000000_20230730T000000_0002.kml'
+        logger.debug(cmd)
+
+    # python -m pytest -s test/test_unit_fcops_mpf_ppf2kml.py::TestCLIIntegration::test_process_nppf_kml_orbit_svt3 -v
+    def test_process_nppf_kml_orbit_svt3(self):
+        """ Test SVT-3 plan """
+        if not self.cli_command:
+            self.skipTest("CLI command not available")
+        cmd = 'fcops_mpf_ppf2kml list --orbit test/data/FLX_OPER_MPL_ORBSCT_20251005T233811_99999999T999999_0001.EOF --kml test/data/FLX_OPER_MPL_NPPF___20251006T000000_20251102T000000_0005.xml > test/data/FLX_OPER_MPL_NPPF___20251006T000000_20251102T000000_0005.kml'
+        print(cmd)
         logger.debug(cmd)
 
 

@@ -75,9 +75,9 @@ def test_unit_parser_xml_ppf(context):
 def test_unit_fcops_mpf_nppf(context):
     '''
     Execution of unit test:
-    python -m pytest test/test_unit_fcops_mpf_ppf2kml.py::TestCLIIntegration::test_version_option -v
-    python -m pytest test/test_unit_fcops_mpf_ppf2kml.py::TestCLIIntegration::test_command_file_config -v
-    python -m pytest test/test_unit_fcops_mpf_ppf2kml.py::TestCLIIntegration::test_process_nppf -v
+    python -m pytest -s test/test_unit_fcops_mpf_ppf2kml.py::TestCLIIntegration::test_version_option -v
+    python -m pytest -s test/test_unit_fcops_mpf_ppf2kml.py::TestCLIIntegration::test_command_file_config -v
+    python -m pytest -s test/test_unit_fcops_mpf_ppf2kml.py::TestCLIIntegration::test_process_nppf -v
     '''
     cmd = 'python3 -m pytest test/test_unit_fcops_mpf_ppf2kml.py -v'
     logger.info(cmd)
