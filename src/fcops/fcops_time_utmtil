@@ -21,6 +21,7 @@ except Exception as e:
     exit(1)
 
 
+from eocfi.constants import XL_ASCII_CCSDSA_COMPACT
 from eocfi.constants import XL_ASCII_CCSDSA
 from eocfi.constants import XL_PROC
 from eocfi.constants import XL_TIME_UTC
@@ -29,6 +30,8 @@ from eocfi.constants import XL_MODEL_DEFAULT
 from eocfi.constants import XF_HEADER_FORMAT_EOF
 
 from eocfi.api    import version as eocfi_version
+from eocfi.api_xd import xd_read_zone_file
+from eocfi.api_xd import xd_read_zone_id
 from eocfi.api_xo import xo_check_library_version
 from eocfi.api_xl import xl_time_ref_init_file
 from eocfi.api_xl import xl_time_processing_to_ascii
@@ -38,9 +41,8 @@ from eocfi.api_xo import xo_check_library_version
 from eocfi.api_xo import xo_verbose
 from eocfi.api_xo import xo_orbit_init_file
 from eocfi.api_xo import xo_orbit_get_val_time
-from eocfi.api_xo import xo_osv_compute
 from eocfi.api_xv import xv_swath_id_init
-from eocfi.api_xv import xv_stationvistime_compute
+from eocfi.api_xv import xv_zonevistime_compute
 from eocfi.api_xv import xv_swathpos_compute
 
 
@@ -49,14 +51,18 @@ logger = logger.patch(lambda record: record.update(name=record["file"].name))
 
 from importlib.metadata import version as package_version
 
-FLX_AUX_UTMTIL  = 'flx_aux_utmtil_20190101T010101_20450101T010101_20240610T115500_01.dbl'
-FLX_SDF         = 'FLX_OPER_MPL_SW_DEF_00000000T000000_99999999T999999_0001.EOF'
-FLX_OSC         = 'FLX_OPER_MPL_ORBSCT_20230703T000001_99999999T999999_0001.EOF'
+FLX_AUX_UTMTIL      = 'flx_aux_utmtil_20190101T010101_20450101T010101_20240610T115500_01.dbl'
+FLX_SDF             = 'FLX_OPER_MPL_SW_DEF_00000000T000000_99999999T999999_0001.EOF'
+FLX_OSC             = 'FLX_OPER_MPL_ORBSCT_20230703T000001_99999999T999999_0001.EOF'
+FLX_ZONE_THRESHOLD  = 'FLX_OPER_MPL_OBSMSK_20250212T125510_99999999T999999_0002_SVT3_THRESHOLD.EOF'
+FLX_ZONE_GOAL       = 'FLX_OPER_MPL_OBSMSK_20250212T130510_99999999T999999_0002_SVT3_GOAL.EOF' 
 
 
 def _init_eocfi(debug: bool = False):
-    path_orb_sct = importlib.resources.files(fcops) / 'data' / FLX_OSC
-    path_sw_sdf  = importlib.resources.files(fcops) / 'data' / FLX_SDF
+    path_orb_sct        = importlib.resources.files(fcops) / 'data' / FLX_OSC
+    path_sw_sdf         = importlib.resources.files(fcops) / 'data' / FLX_SDF
+    path_zone_threshold = importlib.resources.files(fcops) / 'data' / FLX_ZONE_THRESHOLD
+    path_zone_goal      = importlib.resources.files(fcops) / 'data' / FLX_ZONE_GOAL
 
     if debug == True:
         logger.info(f'xl_time_ref_init_file {os.path.basename(str(path_orb_sct))}')
@@ -87,7 +93,31 @@ def _init_eocfi(debug: bool = False):
         logger.info(f'xv_swath_id_init {os.path.basename(str(path_sw_sdf))}')
     swath_mode = XV_FILE_SDF
     xv_swath_id_init(swath_mode, str(path_sw_sdf), debug)
+    return
 
+
+def _eocfi_zonevistime(mjd2000_start: float, mjd2000_stop : float, datetime_start : datetime, datetime_stop : datetime, debug: bool = False):
+    path_orb_sct        = importlib.resources.files(fcops) / 'data' / FLX_OSC
+    path_sw_sdf         = importlib.resources.files(fcops) / 'data' / FLX_SDF
+    path_zone_threshold = importlib.resources.files(fcops) / 'data' / FLX_ZONE_THRESHOLD
+    path_zone_goal      = importlib.resources.files(fcops) / 'data' / FLX_ZONE_GOAL
+
+    if debug == True:
+        logger.info(f'_eocfi_zonevistime {mjd2000_start} {mjd2000_stop} {datetime_start} {datetime_stop}')
+
+    if debug == True:
+        logger.info(f'xd_read_zone_id {os.path.basename(str(path_zone_threshold))}')
+    list_zone_id    = xd_read_zone_id(str(path_zone_threshold), debug)
+    
+    # logger.debug(str(list_zone_id))
+
+    for zone_id in list_zone_id:
+        if debug == True:
+            logger.info(f'xv_zonevistime_compute {zone_id}')
+        list_xv_time_interval = xv_zonevistime_compute(str(path_zone_threshold), zone_id, mjd2000_start, mjd2000_stop, False)
+        if len(list_xv_time_interval) > 0:
+            print(list_xv_time_interval)
+        
     return
 
 
@@ -139,11 +169,8 @@ def get_utmtil(time_start: str, time_end: str, version: bool, silent: bool, debu
         xo_check_library_version()
         exit(0)
 
+    # initialise EOCFI
     _init_eocfi(debug)
-
-    exit(0)
-
-
 
     if '=' in time_start:
         match time_start.split('=')[0]:
@@ -244,28 +271,17 @@ def get_utmtil(time_start: str, time_end: str, version: bool, silent: bool, debu
                                               time_ref_out,
                                               debug)
 
-    datetime_validity_start = datetime.datetime.strptime(ascii_time_validity_start, '%Y%m%dT%H%M%S')
-    datetime_validity_end   = datetime.datetime.strptime(ascii_time_validity_end, '%Y%m%dT%H%M%S')
+    datetime_validity_start = datetime.strptime(ascii_time_validity_start, '%Y%m%dT%H%M%S')
+    datetime_validity_end   = datetime.strptime(ascii_time_validity_end, '%Y%m%dT%H%M%S')
 
+    logger.info(time_start)
+    logger.info(time_end)
+    logger.info(datetime_validity_start)
+    logger.info(datetime_validity_end)
 
+    _eocfi_zonevistime(time_start, time_end, datetime_validity_start, datetime_validity_end, debug)
+    exit(0)
 
-    str_datetime_start  = start
-    str_datetime_end    = end
-    date_format         = '%Y-%m-%dT%H:%M:%S'
-
-    datetime_start      = None
-    datetime_end        = None
-    
-    try:
-        datetime_start      = datetime.strptime(str_datetime_start, date_format)
-        datetime_end        = datetime.strptime(str_datetime_end, date_format)
-    except Exception as e:
-        print(f'Error parsing input datetimes: {e}')
-        exit(1)
-
-    if datetime_start >= datetime_end:
-        print('Error: start datetime must be before end datetime')
-        exit(1)
 
     path_aux_utmtil = importlib.resources.files(fcops) / 'data' / FLX_AUX_UTMTIL
     logger.debug(path_aux_utmtil)

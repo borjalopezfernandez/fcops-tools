@@ -44,7 +44,7 @@ def test_exec(print_separator):
     THEN
     """
     logger.info(f"START : {sys._getframe().f_code.co_name} / {version('fcops')}")
-    cmd             = f'fcops_time_utmtil --start 2023-07-12T07:00:00 --end 2023-07-12T07:10:00'
+    cmd             = f'fcops_time_utmtil --start UTC=20230712T070000 --end UTC=20230712T071000'
     logger.info(cmd)
     exit = os.system(cmd)
     assert(exit == 0)
