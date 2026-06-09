@@ -22,12 +22,11 @@ except Exception as e:
 
 
 from eocfi.constants import XL_ASCII_CCSDSA_COMPACT
-from eocfi.constants import XL_ASCII_CCSDSA
+from eocfi.constants import XL_ASCII_CCSDSA_MICROSEC
 from eocfi.constants import XL_PROC
 from eocfi.constants import XL_TIME_UTC
 from eocfi.constants import XV_FILE_SDF
-from eocfi.constants import XL_MODEL_DEFAULT
-from eocfi.constants import XF_HEADER_FORMAT_EOF
+from eocfi.constants import XV_UTC_TYPE
 
 from eocfi.api    import version as eocfi_version
 from eocfi.api_xd import xd_read_zone_file
@@ -41,7 +40,7 @@ from eocfi.api_xo import xo_check_library_version
 from eocfi.api_xo import xo_verbose
 from eocfi.api_xo import xo_orbit_init_file
 from eocfi.api_xo import xo_orbit_get_val_time
-from eocfi.api_xv import xv_swath_id_init
+from eocfi.api_xv import XV_Time, xv_swath_id_init
 from eocfi.api_xv import xv_zonevistime_compute
 from eocfi.api_xv import xv_swathpos_compute
 
@@ -115,8 +114,43 @@ def _eocfi_zonevistime(mjd2000_start: float, mjd2000_stop : float, datetime_star
         if debug == True:
             logger.info(f'xv_zonevistime_compute {zone_id}')
         list_xv_time_interval = xv_zonevistime_compute(str(path_zone_threshold), zone_id, mjd2000_start, mjd2000_stop, False)
-        if len(list_xv_time_interval) > 0:
-            print(list_xv_time_interval)
+        
+        for xv_time_interval in list_xv_time_interval:
+            print(xv_time_interval)
+            print(xv_time_interval['xv_time_interval']['tstart']['utc_time'])
+            print(xv_time_interval['xv_time_interval']['tstop']['utc_time'])
+            time_start = float(xv_time_interval['xv_time_interval']['tstart']['utc_time'])
+            time_end   = float(xv_time_interval['xv_time_interval']['tstop']['utc_time'])
+
+            if debug == True:
+                logger.info(f'xv_swathpos_compute {zone_id} {time_start} {time_end}')
+  
+            time_swath          = XV_Time()
+            time_swath.type     = XV_UTC_TYPE
+            time_swath.utc_time = time_start
+            pos                 = xv_swathpos_compute(time_swath, False)
+            logger.debug(f"Computed position for {time_start}: {pos}")
+
+            '''
+            positions_west  = []
+            positions_east  = []
+            current_time    = time_start
+            separation      = None
+            while current_time <= time_end:
+                time_swath          = XV_Time()
+                time_swath.type     = XV_UTC_TYPE
+                time_swath.utc_time = eocfi.converters.datetime_utc_to_mjd2000(current_time)
+                pos                 = xv_swathpos_compute(time_swath, False)
+            
+                # if debug == True:
+                #    logger.debug(f"Computed position for {current_time}: {pos}")
+                
+                # Avoid the swath middle point pos[1][1]
+                positions_west.append(pos[1][0])
+                positions_east.append(pos[1][2])
+                current_time += timedelta(seconds = 10)
+            
+            '''
         
     return
 
