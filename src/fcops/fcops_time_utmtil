@@ -8,7 +8,7 @@ import json
 import importlib
 from tracemalloc import start
 import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 import fcops
 
@@ -129,28 +129,52 @@ def _eocfi_zonevistime(mjd2000_start: float, mjd2000_stop : float, datetime_star
             time_swath.type     = XV_UTC_TYPE
             time_swath.utc_time = time_start
             pos                 = xv_swathpos_compute(time_swath, False)
-            logger.debug(f"Computed position for {time_start}: {pos}")
+            # logger.debug(f"Computed position for {time_start}: {pos}")
 
-            '''
             positions_west  = []
             positions_east  = []
-            current_time    = time_start
+            current_time    = datetime_start
             separation      = None
-            while current_time <= time_end:
+            while current_time <= datetime_stop:
                 time_swath          = XV_Time()
                 time_swath.type     = XV_UTC_TYPE
                 time_swath.utc_time = eocfi.converters.datetime_utc_to_mjd2000(current_time)
                 pos                 = xv_swathpos_compute(time_swath, False)
             
                 # if debug == True:
-                #    logger.debug(f"Computed position for {current_time}: {pos}")
+                # logger.debug(f"Computed position for {current_time}: {pos}")
                 
                 # Avoid the swath middle point pos[1][1]
                 positions_west.append(pos[1][0])
                 positions_east.append(pos[1][2])
                 current_time += timedelta(seconds = 10)
             
+            coords = []
             '''
+            if debug == True:
+                logger.debug("")
+                logger.debug(f"[{start_time} - {end_time} - {group_id}] Adding coordinates for position: {pos}")
+            '''
+                
+            for pos in positions_east:
+                coord = f"{pos['lon']},{pos['lat']}"
+                '''
+                if debug == True:
+                    logger.info(f"Adding coordinate: {coord}")
+                '''
+                coords.append(coord)
+
+            for pos in reversed(positions_west):
+                coord = f"{pos['lon']},{pos['lat']}"
+                '''
+                if debug == True:
+                    logger.info(f"Adding coordinate: {coord}")
+                '''
+                coords.append(coord)
+
+            coord = f"{positions_east[0]['lon']},{positions_east[0]['lat']}"
+            coords.append(coord)
+            logger.debug(f"Final coordinates for zone {zone_id}: {coords}")
         
     return
 
@@ -180,7 +204,7 @@ def _get_bboxes_by_tile_id(filepath):
 import click
 CONTEXT_SETTINGS = {"help_option_names": ['-h', '--help'], "max_content_width" : 220}
 
-@click.command(context_settings=CONTEXT_SETTINGS, no_args_is_help = False)
+@click.command(context_settings=CONTEXT_SETTINGS, no_args_is_help = True)
 @click.option('--time-start',  '-s',    help = 'input time start UTC=20230724T120000 | (MJD2000) 8605.5')
 @click.option('--time-end',  '-e',      help = 'input time end   UTC=20230725T000000 | (MJD2000) 8606.0')
 @click.option('--version', '-v',     is_flag = True, default = False,    help = 'It shows the version')
@@ -202,6 +226,10 @@ def get_utmtil(time_start: str, time_end: str, version: bool, silent: bool, debu
         print(f'eocfi - {eocfi_version()}')
         xo_check_library_version()
         exit(0)
+
+    if time_start is None or time_end is None:
+        logger.error('Both --time-start and --time-end options are required.')
+        exit(99)
 
     # initialise EOCFI
     _init_eocfi(debug)
@@ -305,8 +333,8 @@ def get_utmtil(time_start: str, time_end: str, version: bool, silent: bool, debu
                                               time_ref_out,
                                               debug)
 
-    datetime_validity_start = datetime.strptime(ascii_time_validity_start, '%Y%m%dT%H%M%S')
-    datetime_validity_end   = datetime.strptime(ascii_time_validity_end, '%Y%m%dT%H%M%S')
+    datetime_validity_start = datetime.strptime(ascii_time_validity_start, '%Y%m%dT%H%M%S').replace(tzinfo=timezone.utc)
+    datetime_validity_end   = datetime.strptime(ascii_time_validity_end, '%Y%m%dT%H%M%S').replace(tzinfo=timezone.utc)
 
     logger.info(time_start)
     logger.info(time_end)

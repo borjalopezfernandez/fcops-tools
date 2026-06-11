@@ -263,7 +263,7 @@ def list(ctx, filepath, limit, kml, orbit):
                 datatakes.append((group_id, events, duration, 'observation', fpobs_time, ftocnfg_time))
             
             elif has_fpcal and has_ftocalib and has_ftocnfg:
-                
+                '''
                 if has_facqlinr == True:
                     logger.info(f'Group {group_id} has Linearity Calibration')
 
@@ -272,6 +272,7 @@ def list(ctx, filepath, limit, kml, orbit):
 
                 if has_cu_pos_sun == True:
                     logger.info(f'Group {group_id} has Attitude SUN')
+                '''
 
                 fpcal_id_event  = None
                 # Calculate duration as difference between FTOCALIB and FTOCNFG_
