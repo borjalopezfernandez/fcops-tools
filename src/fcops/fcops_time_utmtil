@@ -6,9 +6,10 @@
 import os
 import json
 import importlib
-from tracemalloc import start
+import traceback
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
+from shapely.geometry import Polygon
 
 import fcops
 
@@ -116,9 +117,6 @@ def _eocfi_zonevistime(mjd2000_start: float, mjd2000_stop : float, datetime_star
         list_xv_time_interval = xv_zonevistime_compute(str(path_zone_threshold), zone_id, mjd2000_start, mjd2000_stop, False)
         
         for xv_time_interval in list_xv_time_interval:
-            print(xv_time_interval)
-            print(xv_time_interval['xv_time_interval']['tstart']['utc_time'])
-            print(xv_time_interval['xv_time_interval']['tstop']['utc_time'])
             time_start = float(xv_time_interval['xv_time_interval']['tstart']['utc_time'])
             time_end   = float(xv_time_interval['xv_time_interval']['tstop']['utc_time'])
 
@@ -174,7 +172,9 @@ def _eocfi_zonevistime(mjd2000_start: float, mjd2000_stop : float, datetime_star
 
             coord = f"{positions_east[0]['lon']},{positions_east[0]['lat']}"
             coords.append(coord)
-            logger.debug(f"Final coordinates for zone {zone_id}: {coords}")
+            # logger.debug(f"Final coordinates for zone {zone_id}: {coords}")
+            polygon_zone = _eocfi_swathpos_to_polygon(zone_id, coords)
+            logger.debug(f"Polygon for zone {zone_id}: {polygon_zone}")
         
     return
 
@@ -184,6 +184,7 @@ def _parse_bbox(bbox_str):
     values = list(map(float, bbox_str.strip().split()))
     # B_BOX format: lat1 lon1 lat2 lon2 lat3 lon3 lat4 lon4
     return [(values[i], values[i+1]) for i in range(0, len(values), 2)]
+
 
 def _get_bboxes_by_tile_id(filepath):
     """Return dict of {TILE_IDENTIFIER: [(lat, lon), ...]} from the .dbl XML file."""
@@ -200,6 +201,22 @@ def _get_bboxes_by_tile_id(filepath):
     return result
 
 
+def _utm_bbox_to_polygon(tile, utm_bbox):
+    """ Convert UTM bounding box to a Shapely Polygon and return a dict {tile: polygon} """
+    # print(f"{tile} {utm_bbox}")
+    lon_lat_coords  = [(utm_bbox[0][1], utm_bbox[0][0]), (utm_bbox[1][1], utm_bbox[1][0]), (utm_bbox[2][1], utm_bbox[2][0]), (utm_bbox[3][1], utm_bbox[3][0])]
+    geo_polygon     = Polygon(lon_lat_coords)
+    dict_utm_tile   = {tile: geo_polygon}
+    return dict_utm_tile
+
+
+def _eocfi_swathpos_to_polygon(zone, coordinates):
+    """ Convert zonevistime by eocfi to a Shapely Polygon and return a dict {zone: polygon} """
+    # print(f"{zone} {coordinates}")
+    lon_lat_coords = [tuple(float(x) for x in s.split(',')) for s in coordinates]
+    geo_polygon      = Polygon(lon_lat_coords)
+    dict_zone_tile   = {zone: geo_polygon}
+    return dict_zone_tile
 
 import click
 CONTEXT_SETTINGS = {"help_option_names": ['-h', '--help'], "max_content_width" : 220}
@@ -207,9 +224,9 @@ CONTEXT_SETTINGS = {"help_option_names": ['-h', '--help'], "max_content_width" :
 @click.command(context_settings=CONTEXT_SETTINGS, no_args_is_help = True)
 @click.option('--time-start',  '-s',    help = 'input time start UTC=20230724T120000 | (MJD2000) 8605.5')
 @click.option('--time-end',  '-e',      help = 'input time end   UTC=20230725T000000 | (MJD2000) 8606.0')
-@click.option('--version', '-v',     is_flag = True, default = False,    help = 'It shows the version')
-@click.option('--Silent', '-S',      is_flag = True, default = False,    help = 'Avoid logging messages')
-@click.option('--Debug', '-D',       is_flag = True, default = False,    help = 'Debug flag for verbose messages')
+@click.option('--version', '-v',        is_flag = True, default = False,    help = 'It shows the version')
+@click.option('--Silent', '-S',         is_flag = True, default = False,    help = 'Avoid logging messages')
+@click.option('--Debug', '-D',          is_flag = True, default = False,    help = 'Debug flag for verbose messages')
 
 
 def get_utmtil(time_start: str, time_end: str, version: bool, silent: bool, debug: bool):
@@ -342,16 +359,14 @@ def get_utmtil(time_start: str, time_end: str, version: bool, silent: bool, debu
     logger.info(datetime_validity_end)
 
     _eocfi_zonevistime(time_start, time_end, datetime_validity_start, datetime_validity_end, debug)
-    exit(0)
-
 
     path_aux_utmtil = importlib.resources.files(fcops) / 'data' / FLX_AUX_UTMTIL
     logger.debug(path_aux_utmtil)
 
     utm_bboxes = _get_bboxes_by_tile_id(path_aux_utmtil)
     for tile_id, corners in utm_bboxes.items():
-        print(f"{tile_id}: {corners}")
-
+        polygon_utm = _utm_bbox_to_polygon(tile_id, corners)
+        logger.debug(f"Polygon: {polygon_utm}")
 
 def version():
     return package_version('fcops')

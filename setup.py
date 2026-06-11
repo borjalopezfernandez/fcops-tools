@@ -14,7 +14,7 @@ setup(
     license_files           =   ['LICENSE'],
     python_requires         =   '>=3.12',
     name                    =   'fcops',
-    version                 =   '0.0.7',
+    version                 =   '0.0.8',
     description             =   'FLEX Core Payload Data Ground Segment Operations Service',
     author                  =   'FCOPS Team',
     long_description        =   open('README.md', encoding='utf-8').read() if False else "FLEX Mission Operations Tools",
@@ -40,6 +40,7 @@ setup(
         'lxml',
         'pystac_client',
         'pytz',
+        'shapely',
     ],
     extras_require          =   {
         'dev': ['pytest', 'pytest-cov'],
