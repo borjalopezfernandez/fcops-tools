@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 
 '''
-
+F-COPS time 2 UTM tiles
 '''
 import os
 import json
 import importlib
 import traceback
 import xml.etree.ElementTree as ET
+from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from shapely.geometry import Polygon
+from pyproj import Transformer
+from shapely.ops import transform
 
 import fcops
 
@@ -58,19 +61,26 @@ FLX_ZONE_THRESHOLD  = 'FLX_OPER_MPL_OBSMSK_20250212T125510_99999999T999999_0002_
 FLX_ZONE_GOAL       = 'FLX_OPER_MPL_OBSMSK_20250212T130510_99999999T999999_0002_SVT3_GOAL.EOF' 
 
 
-def _init_eocfi(debug: bool = False):
-    path_orb_sct        = importlib.resources.files(fcops) / 'data' / FLX_OSC
+def _init_eocfi(file_orbit: str, debug: bool = False):
+    path_file_orbit     = importlib.resources.files(fcops) / 'data' / FLX_OSC
     path_sw_sdf         = importlib.resources.files(fcops) / 'data' / FLX_SDF
     path_zone_threshold = importlib.resources.files(fcops) / 'data' / FLX_ZONE_THRESHOLD
     path_zone_goal      = importlib.resources.files(fcops) / 'data' / FLX_ZONE_GOAL
 
+    if file_orbit != None and file_orbit != '':
+        if Path(file_orbit).is_file():
+            path_file_orbit = file_orbit
+        else:
+            logger.error(f'cannot read {path_file_orbit}')
+            exit(99)
+
     if debug == True:
-        logger.info(f'xl_time_ref_init_file {os.path.basename(str(path_orb_sct))}')
+        logger.info(f'xl_time_ref_init_file {os.path.basename(str(path_file_orbit))}')
    
     try:
-        xl_time_ref_init_file(str(path_orb_sct), debug)
+        xl_time_ref_init_file(str(path_file_orbit), debug)
     except Exception as error:
-        logger.error(f"Failed to init the time reference xl_time_ref_init_file with file {path_orb_sct}")
+        logger.error(f"Failed to init the time reference xl_time_ref_init_file with file {path_file_orbit}")
         logger.error(error)
         exit(99)
 
@@ -79,11 +89,11 @@ def _init_eocfi(debug: bool = False):
         xo_verbose(debug)
 
     if debug == True:
-        logger.info(f'xo_orbit_init_file {path_orb_sct}')
+        logger.info(f'xo_orbit_init_file {path_file_orbit}')
     try:
-        xo_orbit_init_file(str(path_orb_sct), debug)
+        xo_orbit_init_file(str(path_file_orbit), debug)
     except Exception as error:
-        logger.error(f"Failed to init the orbit reference xo_orbit_init_file with file {os.path.basename(str(path_orb_sct))}")
+        logger.error(f"Failed to init the orbit reference xo_orbit_init_file with file {os.path.basename(str(path_file_orbit))}")
         logger.error(error)
         if debug == True:
             print(traceback.format_exc())
@@ -96,24 +106,25 @@ def _init_eocfi(debug: bool = False):
     return
 
 
-def _eocfi_zonevistime(mjd2000_start: float, mjd2000_stop : float, datetime_start : datetime, datetime_stop : datetime, debug: bool = False):
-    path_orb_sct        = importlib.resources.files(fcops) / 'data' / FLX_OSC
-    path_sw_sdf         = importlib.resources.files(fcops) / 'data' / FLX_SDF
-    path_zone_threshold = importlib.resources.files(fcops) / 'data' / FLX_ZONE_THRESHOLD
-    path_zone_goal      = importlib.resources.files(fcops) / 'data' / FLX_ZONE_GOAL
+def _eocfi_polygon(mjd2000_start: float, mjd2000_stop : float, datetime_start : datetime, datetime_stop : datetime, debug: bool = False):
+    path_file_orbit         = importlib.resources.files(fcops) / 'data' / FLX_OSC
+    path_sw_sdf             = importlib.resources.files(fcops) / 'data' / FLX_SDF
+    path_zone_threshold     = importlib.resources.files(fcops) / 'data' / FLX_ZONE_THRESHOLD
+    path_zone_goal          = importlib.resources.files(fcops) / 'data' / FLX_ZONE_GOAL
 
     if debug == True:
-        logger.info(f'_eocfi_zonevistime {mjd2000_start} {mjd2000_stop} {datetime_start} {datetime_stop}')
+        logger.info(f'_eocfi_polygon {mjd2000_start} {mjd2000_stop} {datetime_start} {datetime_stop}')
 
     if debug == True:
         logger.info(f'xd_read_zone_id {os.path.basename(str(path_zone_threshold))}')
-    list_zone_id    = xd_read_zone_id(str(path_zone_threshold), debug)
-    
-    # logger.debug(str(list_zone_id))
+    list_zone_id        = xd_read_zone_id(str(path_zone_threshold), debug)
 
-    for zone_id in list_zone_id:
+    list_zone_polygon   = []
+    
+    for zone_id in list_zone_id:    
         if debug == True:
             logger.info(f'xv_zonevistime_compute {zone_id}')
+        
         list_xv_time_interval = xv_zonevistime_compute(str(path_zone_threshold), zone_id, mjd2000_start, mjd2000_stop, False)
         
         for xv_time_interval in list_xv_time_interval:
@@ -173,10 +184,12 @@ def _eocfi_zonevistime(mjd2000_start: float, mjd2000_stop : float, datetime_star
             coord = f"{positions_east[0]['lon']},{positions_east[0]['lat']}"
             coords.append(coord)
             # logger.debug(f"Final coordinates for zone {zone_id}: {coords}")
-            polygon_zone = _eocfi_swathpos_to_polygon(zone_id, coords)
-            logger.debug(f"Polygon for zone {zone_id}: {polygon_zone}")
+            # zone_polygon = _eocfi_swathpos_to_polygon(zone_id, coords)
+            zone_polygon = _eocfi_swathpos_to_polygon_proj(zone_id, coords, debug)
+            # logger.debug(f"Polygon {zone_polygon}")
+            list_zone_polygon.append(zone_polygon)
         
-    return
+    return list_zone_polygon
 
 
 def _parse_bbox(bbox_str):
@@ -210,26 +223,54 @@ def _utm_bbox_to_polygon(tile, utm_bbox):
     return dict_utm_tile
 
 
+def _utm_bbox_to_polygon_proj(tile, utm_bbox, debug: bool = False):
+    """ Convert UTM bounding box to a pyproj Polygon and return a dict {tile: polygon} """
+    # Initialise the pyproj
+    transformer         = Transformer.from_crs("EPSG:4326", "EPSG:6933", always_xy = True)
+    lon_lat_coords      = [(utm_bbox[0][1], utm_bbox[0][0]), (utm_bbox[1][1], utm_bbox[1][0]), (utm_bbox[2][1], utm_bbox[2][0]), (utm_bbox[3][1], utm_bbox[3][0])]
+    polygon             = Polygon(lon_lat_coords)
+    '''
+    if debug == True:
+        logger.debug(f"Polygon UTM before projection: {polygon}")
+    '''
+    polygon_proj        = transform(transformer.transform, polygon)
+    dict_utm_tile       = {tile: polygon_proj}
+    return dict_utm_tile
+
+
 def _eocfi_swathpos_to_polygon(zone, coordinates):
     """ Convert zonevistime by eocfi to a Shapely Polygon and return a dict {zone: polygon} """
-    # print(f"{zone} {coordinates}")
-    lon_lat_coords = [tuple(float(x) for x in s.split(',')) for s in coordinates]
-    geo_polygon      = Polygon(lon_lat_coords)
-    dict_zone_tile   = {zone: geo_polygon}
+    lon_lat_coords      = [tuple(float(x) for x in s.split(',')) for s in coordinates]
+    geo_polygon         = Polygon(lon_lat_coords)
+    dict_zone_tile      = {zone: geo_polygon}
+    return dict_zone_tile
+
+
+def _eocfi_swathpos_to_polygon_proj(zone, coordinates, debug: bool = False):
+    """ Convert zonevistime by eocfi to a pyproj Polygon and return a dict {zone: polygon} """
+    # Initialise the pyproj
+    transformer         = Transformer.from_crs("EPSG:4326", "EPSG:6933", always_xy = True)
+    lon_lat_coords      = [tuple(float(x) for x in s.split(',')) for s in coordinates]
+    polygon             = Polygon(lon_lat_coords)
+    if debug == True:
+        logger.debug(f"Polygon before projection: {polygon}")
+    polygon_proj        = transform(transformer.transform, polygon)
+    dict_zone_tile      = {zone: polygon_proj}
     return dict_zone_tile
 
 import click
 CONTEXT_SETTINGS = {"help_option_names": ['-h', '--help'], "max_content_width" : 220}
 
 @click.command(context_settings=CONTEXT_SETTINGS, no_args_is_help = True)
-@click.option('--time-start',  '-s',    help = 'input time start UTC=20230724T120000 | (MJD2000) 8605.5')
-@click.option('--time-end',  '-e',      help = 'input time end   UTC=20230725T000000 | (MJD2000) 8606.0')
+@click.option('--time-start',   '-s',       help = 'input time start UTC=20230724T120000 | (MJD2000) 8605.5')
+@click.option('--time-end',     '-e',       help = 'input time end   UTC=20230725T000000 | (MJD2000) 8606.0')
+@click.option('--file-orbit',   '-o',       help = 'orbit ephemeris file')
 @click.option('--version', '-v',        is_flag = True, default = False,    help = 'It shows the version')
 @click.option('--Silent', '-S',         is_flag = True, default = False,    help = 'Avoid logging messages')
 @click.option('--Debug', '-D',          is_flag = True, default = False,    help = 'Debug flag for verbose messages')
 
 
-def get_utmtil(time_start: str, time_end: str, version: bool, silent: bool, debug: bool):
+def get_polygons(time_start: str, time_end: str, file_orbit: str, version: bool, silent: bool, debug: bool):
 
     """
     \b
@@ -249,7 +290,7 @@ def get_utmtil(time_start: str, time_end: str, version: bool, silent: bool, debu
         exit(99)
 
     # initialise EOCFI
-    _init_eocfi(debug)
+    _init_eocfi(file_orbit, debug)
 
     if '=' in time_start:
         match time_start.split('=')[0]:
@@ -352,27 +393,42 @@ def get_utmtil(time_start: str, time_end: str, version: bool, silent: bool, debu
 
     datetime_validity_start = datetime.strptime(ascii_time_validity_start, '%Y%m%dT%H%M%S').replace(tzinfo=timezone.utc)
     datetime_validity_end   = datetime.strptime(ascii_time_validity_end, '%Y%m%dT%H%M%S').replace(tzinfo=timezone.utc)
-
-    logger.info(time_start)
-    logger.info(time_end)
-    logger.info(datetime_validity_start)
-    logger.info(datetime_validity_end)
-
-    _eocfi_zonevistime(time_start, time_end, datetime_validity_start, datetime_validity_end, debug)
-
-    path_aux_utmtil = importlib.resources.files(fcops) / 'data' / FLX_AUX_UTMTIL
-    logger.debug(path_aux_utmtil)
-
-    utm_bboxes = _get_bboxes_by_tile_id(path_aux_utmtil)
+    list_zone_polygons      = _eocfi_polygon(time_start, time_end, datetime_validity_start, datetime_validity_end, debug)
+    
+    path_aux_utmtil         = importlib.resources.files(fcops) / 'data' / FLX_AUX_UTMTIL
+    utm_bboxes              = _get_bboxes_by_tile_id(path_aux_utmtil)
+    
+    list_utm_polygons       = []
+    list_utm_polygons_proj  = []
     for tile_id, corners in utm_bboxes.items():
-        polygon_utm = _utm_bbox_to_polygon(tile_id, corners)
-        logger.debug(f"Polygon: {polygon_utm}")
+        # polygon_utm = _utm_bbox_to_polygon(tile_id, corners)
+        polygon_utm = _utm_bbox_to_polygon_proj(tile_id, corners, debug)
+        # logger.debug(f"Polygon: {polygon_utm}")
+        list_utm_polygons.append(polygon_utm)
+
+    for zone_polygon in list_zone_polygons:
+        # logger.info(f"{zone_polygon}")
+        zone_id = next(iter(zone_polygon))
+        # logger.info(f"Zone {zone_id} polygon: {zone_polygon[zone_id]}")
+        
+        for utm_polygon in list_utm_polygons:
+            utm_tile_id  = next(iter(utm_polygon))
+            # logger.info(f"UTM tile {utm_tile_id} polygon: {utm_polygon[utm_tile_id]}")
+            intersection = zone_polygon[zone_id].intersection(utm_polygon[utm_tile_id])
+            if not intersection.is_empty:
+                logger.info(f'{zone_id} - {utm_tile_id}')
+            #else:
+            #    logger.info('niente')
+
+ 
+
+
+    return list_zone_polygons, list_utm_polygons
 
 def version():
     return package_version('fcops')
 
 if __name__ == '__main__':
-    get_utmtil()
-
+    get_polygons()
 
 exit(0)

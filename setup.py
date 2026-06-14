@@ -38,6 +38,7 @@ setup(
         'pytest',
         'loguru',
         'lxml',
+        'pyproj',
         'pystac_client',
         'pytz',
         'shapely',

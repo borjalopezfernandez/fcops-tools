@@ -37,17 +37,29 @@ def test_options(print_separator):
     logger.info(f"END : {sys._getframe().f_code.co_name} / {version('fcops')}")
 
 
-def test_exec(print_separator):
+def test_with_reference_orbit(print_separator):
     """
     GIVEN test_conversion
     WHEN 
     THEN
     """
     logger.info(f"START : {sys._getframe().f_code.co_name} / {version('fcops')}")
-    cmd             = f'fcops_time_utmtil -s UTC=20230712T070000 -e UTC=20230712T073000'
+    cmd             = f'fcops_time_utmtil -s UTC=20230712T071400 -e UTC=20230712T073000'
     logger.info(cmd)
     exit = os.system(cmd)
     assert(exit == 0)
     logger.info(f"END : {sys._getframe().f_code.co_name} / {version('fcops')}")
 
 
+def test_with_predicted_orbit(print_separator):
+    """
+    GIVEN test_conversion
+    WHEN 
+    THEN
+    """
+    logger.info(f"START : {sys._getframe().f_code.co_name} / {version('fcops')}")
+    cmd             = f'fcops_time_utmtil -s UTC=20230712T071400 -e UTC=20230712T073000 -o test/data/FLX_OPER_MPL_ORBPRE_20230710T071054_20230712T112130_0002.EOF'
+    logger.info(cmd)
+    exit = os.system(cmd)
+    assert(exit == 0)
+    logger.info(f"END : {sys._getframe().f_code.co_name} / {version('fcops')}")

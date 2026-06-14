@@ -1,0 +1,449 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+  <Earth_Observation_File schemaVersion="2.1" xmlns="http://eop-cfi.esa.int/CFI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://eop-cfi.esa.int/CFI http://eop-cfi.esa.int/CFI/EE_CFI_SCHEMAS/EO_OPER_MPL_ORBPRE_0201.XSD">
+<Earth_Observation_Header>
+    <Fixed_Header>
+      <File_Name>FLX_OPER_MPL_ORBPRE_20230710T071054_20230712T112130_0002</File_Name>
+      <File_Description>FOS Predicted Orbit File</File_Description>
+      <Notes></Notes>
+      <Mission>FLEX</Mission>
+      <File_Class>OPER</File_Class>
+      <File_Type>MPL_ORBPRE</File_Type>
+      <Validity_Period>
+        <Validity_Start>UTC=2023-07-10T07:10:54</Validity_Start>
+        <Validity_Stop>UTC=2023-07-12T11:21:30</Validity_Stop>
+      </Validity_Period>
+      <File_Version>0002</File_Version>
+      <EOFFS_Version>3.0</EOFFS_Version>
+      <Source>
+        <System>FOS</System>
+        <Creator>NAPEOS</Creator>
+        <Creator_Version>3.0</Creator_Version>
+        <Creation_Date>UTC=2023-07-09T15:36:21</Creation_Date>
+      </Source>
+    </Fixed_Header>
+    <Variable_Header>
+      <Ref_Frame>EARTH_FIXED</Ref_Frame>
+      <Time_Reference>UTC</Time_Reference>
+    </Variable_Header>
+  </Earth_Observation_Header>
+  <Data_Block type="xml">
+    <List_of_OSVs count="32">
+       <OSV>
+        <TAI>TAI=2023-07-10T07:11:31.763000</TAI>
+        <UTC>UTC=2023-07-10T07:10:54.763000</UTC>
+        <UT1>UT1=2023-07-10T07:10:54.763000</UT1>
+        <Absolute_Orbit>+38150</Absolute_Orbit>
+        <X unit="m">-6869160.519</X>
+        <Y unit="m">-2102488.118</Y>
+        <Z unit="m">-0016553.011</Z>
+        <VX unit="m/s">-0488.288951</VX>
+        <VY unit="m/s">+1566.441693</VY>
+        <VZ unit="m/s">+7366.386012</VZ>
+        <Quality>0000000000000</Quality>
+      </OSV>
+      <OSV>
+        <TAI>TAI=2023-07-10T08:52:30.984000</TAI>
+        <UTC>UTC=2023-07-10T08:51:53.984000</UTC>
+        <UT1>UT1=2023-07-10T08:51:53.984000</UT1>
+        <Absolute_Orbit>+38151</Absolute_Orbit>
+        <X unit="m">-7109292.870</X>
+        <Y unit="m">+1031408.327</Y>
+        <Z unit="m">-0001812.655</Z>
+        <VX unit="m/s">+0242.181687</VX>
+        <VY unit="m/s">+1622.805228</VY>
+        <VZ unit="m/s">+7366.405122</VZ>
+        <Quality>0000000000000</Quality>
+      </OSV>
+      <OSV>
+        <TAI>TAI=2023-07-10T10:33:30.205000</TAI>
+        <UTC>UTC=2023-07-10T10:32:53.205000</UTC>
+        <UT1>UT1=2023-07-10T10:32:53.205000</UT1>
+        <Absolute_Orbit>+38152</Absolute_Orbit>
+        <X unit="m">-5990294.459</X>
+        <Y unit="m">+3965125.538</Y>
+        <Z unit="m">-0001806.992</Z>
+        <VX unit="m/s">+0911.211050</VX>
+        <VY unit="m/s">+1364.500318</VY>
+        <VZ unit="m/s">+7366.403908</VZ>
+        <Quality>0000000000000</Quality>
+      </OSV>
+	  <OSV>
+        <TAI>TAI=2023-07-10T12:14:29.426000</TAI>
+        <UTC>UTC=2023-07-10T12:13:52.426000</UTC>
+        <UT1>UT1=2023-07-10T12:13:52.426000</UT1>
+        <Absolute_Orbit>+38153</Absolute_Orbit>
+        <X unit="m">-3726903.142</X>
+        <Y unit="m">+6141338.721</Y>
+        <Z unit="m">-0001811.337</Z>
+        <VX unit="m/s">+1406.158019</VX>
+        <VY unit="m/s">+0845.522381</VY>
+        <VZ unit="m/s">+7366.402423</VZ>
+        <Quality>0000000000000</Quality>
+      </OSV>
+	  <OSV>
+        <TAI>TAI=2023-07-10T13:55:28.647000</TAI>
+        <UTC>UTC=2023-07-10T13:54:51.647000</UTC>
+        <UT1>UT1=2023-07-10T13:54:51.647000</UT1>
+        <Absolute_Orbit>+38154</Absolute_Orbit>
+        <X unit="m">-0751518.078</X>
+        <Y unit="m">+7144303.246</Y>
+        <Z unit="m">-0001811.220</Z>
+        <VX unit="m/s">+1632.477513</VX>
+        <VY unit="m/s">+0165.007006</VY>
+        <VZ unit="m/s">+7366.400954</VZ>
+        <Quality>0000000000000</Quality>
+      </OSV>
+	  <OSV>
+        <TAI>TAI=2023-07-10T15:36:27.867000</TAI>
+        <UTC>UTC=2023-07-10T15:35:50.867000</UTC>
+        <UT1>UT1=2023-07-10T15:35:50.867000</UT1>
+        <Absolute_Orbit>+38155</Absolute_Orbit>
+        <X unit="m">+2367438.062</X>
+        <Y unit="m">+6782409.991</Y>
+        <Z unit="m">-0001813.693</Z>
+        <VX unit="m/s">+1546.926315</VX>
+        <VY unit="m/s">-0547.034214</VY>
+        <VZ unit="m/s">+7366.399781</VZ>
+        <Quality>0000000000000</Quality>
+      </OSV>
+	   <OSV>
+        <TAI>TAI=2023-07-10T17:17:27.088000</TAI>
+        <UTC>UTC=2023-07-10T17:16:50.088000</UTC>
+        <UT1>UT1=2023-07-10T17:16:50.088000</UT1>
+        <Absolute_Orbit>+38156</Absolute_Orbit>
+        <X unit="m">+5034115.488</X>
+        <Y unit="m">+5124795.554</Y>
+        <Z unit="m">-0001817.968</Z>
+        <VX unit="m/s">+1165.848321</VX>
+        <VY unit="m/s">-1154.571265</VY>
+        <VZ unit="m/s">+7366.399127</VZ>
+        <Quality>0000000000000</Quality>
+      </OSV>
+	  <OSV>
+        <TAI>TAI=2023-07-10T18:58:26.309000</TAI>
+        <UTC>UTC=2023-07-10T18:57:49.309000</UTC>
+        <UT1>UT1=2023-07-10T18:57:49.309000</UT1>
+        <Absolute_Orbit>+38157</Absolute_Orbit>
+        <X unit="m">+6739067.820</X>
+        <Y unit="m">+2488134.479</Y>
+        <Z unit="m">-0001830.268</Z>
+        <VX unit="m/s">+0562.052991</VX>
+        <VY unit="m/s">-1541.536121</VY>
+        <VZ unit="m/s">+7366.399116</VZ>
+        <Quality>0000000000000</Quality>
+      </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-10T20:39:25.530000</TAI>
+		<UTC>UTC=2023-07-10T20:38:48.530000</UTC>
+		<UT1>UT1=2023-07-10T20:38:48.530000</UT1>
+		<Absolute_Orbit>+38158</Absolute_Orbit>
+		<X unit="m">+7156580.282</X>
+		<Y unit="m">-0623864.472</Y>
+		<Z unit="m">-0001834.600</Z>
+		<VX unit="m/s">-0149.122223</VX>
+		<VY unit="m/s">-1634.010521</VY>
+		<VZ unit="m/s">+7366.399753</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-10T22:20:24.751000</TAI>
+		<UTC>UTC=2023-07-10T22:19:47.751000</UTC>
+		<UT1>UT1=2023-07-10T22:19:47.751000</UT1>
+		<Absolute_Orbit>+38159</Absolute_Orbit>
+		<X unit="m">+6206889.541</X>
+		<Y unit="m">-3616679.473</Y>
+		<Z unit="m">-0001837.174</Z>
+		<VX unit="m/s">-0831.807207</VX>
+		<VY unit="m/s">-1414.322281</VY>
+		<VZ unit="m/s">+7366.400915</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-11T00:01:23.971000</TAI>
+		<UTC>UTC=2023-07-11T00:00:46.971000</UTC>
+		<UT1>UT1=2023-07-11T00:00:46.971000</UT1>
+		<Absolute_Orbit>+38160</Absolute_Orbit>
+		<X unit="m">+4071425.856</X>
+		<Y unit="m">-5918558.917</Y>
+		<Z unit="m">-0001837.183</Z>
+		<VX unit="m/s">-1355.580237</VX>
+		<VY unit="m/s">-0924.441148</VY>
+		<VZ unit="m/s">+7366.402378</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-11T01:42:23.192000</TAI>
+		<UTC>UTC=2023-07-11T01:41:46.192000</UTC>
+		<UT1>UT1=2023-07-11T01:41:46.192000</UT1>
+		<Absolute_Orbit>+38161</Absolute_Orbit>
+		<X unit="m">+1158151.227</X>
+		<Y unit="m">-7089748.505</Y>
+		<Z unit="m">-0001834.299</Z>
+		<VX unit="m/s">-1620.378507</VX>
+		<VY unit="m/s">-0257.955139</VY>
+		<VZ unit="m/s">+7366.403863</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-11T03:23:22.413000</TAI>
+		<UTC>UTC=2023-07-11T03:22:45.413000</UTC>
+		<UT1>UT1=2023-07-11T03:22:45.413000</UT1>
+		<Absolute_Orbit>+38162</Absolute_Orbit>
+		<X unit="m">-1976376.671</X>
+		<Y unit="m">-6906502.985</Y>
+		<Z unit="m">-0001836.121</Z>
+		<VX unit="m/s">-1575.616521</VX>
+		<VY unit="m/s">+0457.801086</VY>
+		<VZ unit="m/s">+7366.405085</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-11T05:04:21.634000</TAI>
+		<UTC>UTC=2023-07-11T05:03:44.634000</UTC>
+		<UT1>UT1=2023-07-11T05:03:44.634000</UT1>
+		<Absolute_Orbit>+38163</Absolute_Orbit>
+		<X unit="m">-4733336.399</X>
+		<Y unit="m">-5403829.638</Y>
+		<Z unit="m">-0001828.653</Z>
+		<VX unit="m/s">-1229.844805</VX>
+		<VY unit="m/s">+1086.103269</VY>
+		<VZ unit="m/s">+7366.405814</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-11T06:45:20.854000</TAI>
+		<UTC>UTC=2023-07-11T06:44:43.854000</UTC>
+		<UT1>UT1=2023-07-11T06:44:43.854000</UT1>
+		<Absolute_Orbit>+38164</Absolute_Orbit>
+		<X unit="m">-6586032.856</X>
+		<Y unit="m">-2868801.046</Y>
+		<Z unit="m">-0001820.368</Z>
+		<VX unit="m/s">-0649.119105</VX>
+		<VY unit="m/s">+1506.911274</VY>
+		<VZ unit="m/s">+7366.405908</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-11T08:26:20.075000</TAI>
+		<UTC>UTC=2023-07-11T08:25:43.075000</UTC>
+		<UT1>UT1=2023-07-11T08:25:43.075000</UT1>
+		<Absolute_Orbit>+38165</Absolute_Orbit>
+		<X unit="m">-7180524.296</X>
+		<Y unit="m">+0214287.349</Y>
+		<Z unit="m">-0001812.531</Z>
+		<VX unit="m/s">+0055.617401</VX>
+		<VY unit="m/s">+1639.832967</VY>
+		<VZ unit="m/s">+7366.405350</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-11T10:07:19.296000</TAI>
+		<UTC>UTC=2023-07-11T10:06:42.296000</UTC>
+		<UT1>UT1=2023-07-11T10:06:42.296000</UT1>
+		<Absolute_Orbit>+38166</Absolute_Orbit>
+		<X unit="m">-6403238.982</X>
+		<Y unit="m">+3256436.527</Y>
+		<Z unit="m">-0001813.674</Z>
+		<VX unit="m/s">+0749.723155</VX>
+		<VY unit="m/s">+1459.478271</VY>
+		<VZ unit="m/s">+7366.404244</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-11T11:48:18.517000</TAI>
+		<UTC>UTC=2023-07-11T11:47:41.517000</UTC>
+		<UT1>UT1=2023-07-11T11:47:41.517000</UT1>
+		<Absolute_Orbit>+38167</Absolute_Orbit>
+		<X unit="m">-4402669.797</X>
+		<Y unit="m">+5676473.110</Y>
+		<Z unit="m">-0001809.947</Z>
+		<VX unit="m/s">+1300.609581</VX>
+		<VY unit="m/s">+1000.298733</VY>
+		<VZ unit="m/s">+7366.402807</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-11T13:29:17.738000</TAI>
+		<UTC>UTC=2023-07-11T13:28:40.738000</UTC>
+		<UT1>UT1=2023-07-11T13:28:40.738000</UT1>
+		<Absolute_Orbit>+38168</Absolute_Orbit>
+		<X unit="m">-1561008.356</X>
+		<Y unit="m">+7012068.253</Y>
+		<Z unit="m">-0001809.094</Z>
+		<VX unit="m/s">+1603.026136</VX>
+		<VY unit="m/s">+0350.017307</VY>
+		<VZ unit="m/s">+7366.401311</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-11T15:10:16.958000</TAI>
+		<UTC>UTC=2023-07-11T15:09:39.958000</UTC>
+		<UT1>UT1=2023-07-11T15:09:39.958000</UT1>
+		<Absolute_Orbit>+38169</Absolute_Orbit>
+		<X unit="m">+1578870.325</X>
+		<Y unit="m">+7008067.975</Y>
+		<Z unit="m">-0001810.951</Z>
+		<VX unit="m/s">+1599.198458</VX>
+		<VY unit="m/s">-0367.134747</VY>
+		<VZ unit="m/s">+7366.400043</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-11T16:51:16.179000</TAI>
+		<UTC>UTC=2023-07-11T16:50:39.179000</UTC>
+		<UT1>UT1=2023-07-11T16:50:39.179000</UT1>
+		<Absolute_Orbit>+38170</Absolute_Orbit>
+		<X unit="m">+4417119.385</X>
+		<Y unit="m">+5665236.494</Y>
+		<Z unit="m">-0001814.855</Z>
+		<VX unit="m/s">+1289.857794</VX>
+		<VY unit="m/s">-1014.151026</VY>
+		<VZ unit="m/s">+7366.399244</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-11T18:32:15.400000</TAI>
+		<UTC>UTC=2023-07-11T18:31:38.400000</UTC>
+		<UT1>UT1=2023-07-11T18:31:38.400000</UT1>
+		<Absolute_Orbit>+38171</Absolute_Orbit>
+		<X unit="m">+6411514.986</X>
+		<Y unit="m">+3240111.700</Y>
+		<Z unit="m">-0001827.084</Z>
+		<VX unit="m/s">+0734.108375</VX>
+		<VY unit="m/s">-1467.420477</VY>
+		<VZ unit="m/s">+7366.399065</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-11T20:13:14.621000</TAI>
+		<UTC>UTC=2023-07-11T20:12:37.621000</UTC>
+		<UT1>UT1=2023-07-11T20:12:37.621000</UT1>
+		<Absolute_Orbit>+38172</Absolute_Orbit>
+		<X unit="m">+7181046.997</X>
+		<Y unit="m">+0195990.380</Y>
+		<Z unit="m">-0001831.670</Z>
+		<VX unit="m/s">+0038.109901</VX>
+		<VY unit="m/s">-1640.359278</VY>
+		<VZ unit="m/s">+7366.399545</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-11T21:54:13.841000</TAI>
+		<UTC>UTC=2023-07-11T21:53:36.841000</UTC>
+		<UT1>UT1=2023-07-11T21:53:36.841000</UT1>
+		<Absolute_Orbit>+38173</Absolute_Orbit>
+		<X unit="m">+6578701.647</X>
+		<Y unit="m">-2885573.218</Y>
+		<Z unit="m">-0001834.761</Z>
+		<VX unit="m/s">-0665.167604</VX>
+		<VY unit="m/s">-1499.922544</VY>
+		<VZ unit="m/s">+7366.400588</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-11T23:35:13.062000</TAI>
+		<UTC>UTC=2023-07-11T23:34:36.062000</UTC>
+		<UT1>UT1=2023-07-11T23:34:36.062000</UT1>
+		<Absolute_Orbit>+38174</Absolute_Orbit>
+		<X unit="m">+4719551.844</X>
+		<Y unit="m">-5415872.831</Y>
+		<Z unit="m">-0001835.462</Z>
+		<VX unit="m/s">-1241.368361</VX>
+		<VY unit="m/s">-1072.939633</VY>
+		<VZ unit="m/s">+7366.401996</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-12T01:16:12.283000</TAI>
+		<UTC>UTC=2023-07-12T01:15:35.283000</UTC>
+		<UT1>UT1=2023-07-12T01:15:35.283000</UT1>
+		<Absolute_Orbit>+38175</Absolute_Orbit>
+		<X unit="m">+1958773.771</X>
+		<Y unit="m">-6911516.008</Y>
+		<Z unit="m">-0001840.669</Z>
+		<VX unit="m/s">-1580.411492</VX>
+		<VY unit="m/s">-0440.989971</VY>
+		<VZ unit="m/s">+7366.403498</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-12T02:57:11.504000</TAI>
+		<UTC>UTC=2023-07-12T02:56:34.504000</UTC>
+		<UT1>UT1=2023-07-12T02:56:34.504000</UT1>
+		<Absolute_Orbit>+38176</Absolute_Orbit>
+		<X unit="m">-1176212.448</X>
+		<Y unit="m">-7086774.476</Y>
+		<Z unit="m">-0001835.753</Z>
+		<VX unit="m/s">-1617.532780</VX>
+		<VY unit="m/s">+0275.210923</VY>
+		<VZ unit="m/s">+7366.404809</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-12T04:38:10.725000</TAI>
+		<UTC>UTC=2023-07-12T04:37:33.725000</UTC>
+		<UT1>UT1=2023-07-12T04:37:33.725000</UT1>
+		<Absolute_Orbit>+38177</Absolute_Orbit>
+		<X unit="m">-4086493.381</X>
+		<Y unit="m">-5908165.540</Y>
+		<Z unit="m">-0001828.684</Z>
+		<VX unit="m/s">-1345.635274</VX>
+		<VY unit="m/s">+0938.832407</VY>
+		<VZ unit="m/s">+7366.405678</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-12T06:19:09.945000</TAI>
+		<UTC>UTC=2023-07-12T06:18:32.945000</UTC>
+		<UT1>UT1=2023-07-12T06:18:32.945000</UT1>
+		<Absolute_Orbit>+38178</Absolute_Orbit>
+		<X unit="m">-6216084.846</X>
+		<Y unit="m">-3600852.313</Y>
+		<Z unit="m">-0001820.499</Z>
+		<VX unit="m/s">-0816.662897</VX>
+		<VY unit="m/s">+1423.094687</VY>
+		<VZ unit="m/s">+7366.405938</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+	  <OSV>
+		<TAI>TAI=2023-07-12T08:00:09.166000</TAI>
+		<UTC>UTC=2023-07-12T07:59:32.166000</UTC>
+		<UT1>UT1=2023-07-12T07:59:32.166000</UT1>
+		<Absolute_Orbit>+38179</Absolute_Orbit>
+		<X unit="m">-7158146.682</X>
+		<Y unit="m">-0605627.177</Y>
+		<Z unit="m">-0001812.441</Z>
+		<VX unit="m/s">-0131.671756</VX>
+		<VY unit="m/s">+1635.483174</VY>
+		<VZ unit="m/s">+7366.405541</VZ>
+		<Quality>0000000000000</Quality>
+	  </OSV>
+          <OSV>
+                <TAI>TAI=2023-07-12T09:41:08.387000</TAI>
+                <UTC>UTC=2023-07-12T09:40:31.387000</UTC>
+                <UT1>UT1=2023-07-12T09:40:31.387000</UT1>
+                <Absolute_Orbit>+38180</Absolute_Orbit>
+                <X unit="m">-7158146.682</X>
+                <Y unit="m">-0605627.177</Y>
+                <Z unit="m">-0001812.441</Z>
+                <VX unit="m/s">-0131.671756</VX>
+                <VY unit="m/s">+1635.483174</VY>
+                <VZ unit="m/s">+7366.405541</VZ>
+                <Quality>0000000000000</Quality>
+          </OSV>
+          <OSV>
+                <TAI>TAI=2023-07-12T11:22:07.608000</TAI>
+                <UTC>UTC=2023-07-12T11:21:30.608000</UTC>
+                <UT1>UT1=2023-07-12T11:21:30.608000</UT1>
+                <Absolute_Orbit>+38181</Absolute_Orbit>
+                <X unit="m">-7158146.682</X>
+                <Y unit="m">-0605627.177</Y>
+                <Z unit="m">-0001812.441</Z>
+                <VX unit="m/s">-0131.671756</VX>
+                <VY unit="m/s">+1635.483174</VY>
+                <VZ unit="m/s">+7366.405541</VZ>
+                <Quality>0000000000000</Quality>
+          </OSV>
+    </List_of_OSVs>
+  </Data_Block>
+</Earth_Observation_File>
