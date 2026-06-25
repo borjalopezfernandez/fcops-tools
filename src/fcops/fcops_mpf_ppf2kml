@@ -334,6 +334,13 @@ def list(ctx, filepath, limit, kml, orbit):
                 document    = etree.SubElement(root, 'Document')
                 etree.SubElement(document, 'name').text = 'FLEX Core Operations Service'
                 
+                 # Add UTM tiles
+                style_obs = etree.SubElement(document, 'Style')
+                style_obs.set('id', 'UTMStyle')
+                line_style_obs = etree.SubElement(style_obs, 'LineStyle')
+                etree.SubElement(line_style_obs, 'color').text = 'ffffff00'  # green
+                etree.SubElement(line_style_obs, 'width').text = '2'
+
                 # Add styles for observation and calibration
                 style_obs = etree.SubElement(document, 'Style')
                 style_obs.set('id', 'observationStyle')
@@ -354,10 +361,10 @@ def list(ctx, filepath, limit, kml, orbit):
                 etree.SubElement(line_style_cal, 'width').text = '2'
 
                 obs_folder  = etree.SubElement(document, 'Folder')
-                etree.SubElement(obs_folder, 'name').text = 'Observation Datatakes'
+                etree.SubElement(obs_folder, 'name').text = 'Datatakes Observation'
                 
                 cal_folder = etree.SubElement(document, 'Folder')
-                etree.SubElement(cal_folder, 'name').text = 'Calibration Datatakes'
+                etree.SubElement(cal_folder, 'name').text = 'Datatakes Calibration'
                 
                 for idx, (group_id, events, duration, dt_type, start_time, end_time) in enumerate(sorted_datatakes):
                     # Compute positions every 10 seconds between start and end
