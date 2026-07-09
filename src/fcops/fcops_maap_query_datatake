@@ -250,11 +250,17 @@ def query_products_flex(datetime_start: datetime, datetime_end: datetime, type: 
         flex_collections = ['BiomassAuxRestIOC', 'BiomassAuxRest']
     
     '''
-        
+
     if debug == True:
         logger.debug(f'Connecting to {URL_LANDING_PAGE}')
     
-    api  = Client.open(URL_LANDING_PAGE) 
+    api = None
+    try:
+        api  = Client.open(URL_LANDING_PAGE)
+    except Exception as e:
+        logger.error(f"Error when connecting to {URL_LANDING_PAGE}")
+        logger.error(f"{e}")
+        exit(1)
     
     if debug == True:
         logger.debug(f'{str_datetime_start} to {str_datetime_end} => querying {type} products in collections {flex_collections}')
@@ -276,7 +282,13 @@ def query_products_flex(datetime_start: datetime, datetime_end: datetime, type: 
             datetime    = [datetime_start, datetime_end]
         )
 
-    items = list(results.items())
+    items = []
+    try:
+        items = list(results.items())
+    except Exception as e:
+        logger.error(f"Error when querying {type} products between {str_datetime_start} and {str_datetime_end}")
+        logger.error(f"{e}")
+        exit(1)
     
     if len(items) == 0:
         if debug == True:
