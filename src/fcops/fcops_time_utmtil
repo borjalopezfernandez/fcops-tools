@@ -3,6 +3,7 @@
 '''
 F-COPS time 2 UTM tiles
 '''
+from multiprocessing.util import debug
 import os
 import json
 import importlib
@@ -54,7 +55,8 @@ logger = logger.patch(lambda record: record.update(name=record["file"].name))
 
 from importlib.metadata import version as package_version
 
-FLX_AUX_UTMTIL      = 'flx_aux_utmtil_20190101T010101_20450101T010101_20240610T115500_01.dbl'
+# FLX_AUX_UTMTIL      = 'flx_aux_utmtil_20190101T010101_20450101T010101_20240610T115500_01.dbl'
+FLX_AUX_UTMTIL      = 'flx_aux_utmtil_20190101T010101_20450101T010101_20240610T115500_01_FULL.dbl'
 FLX_SDF             = 'FLX_OPER_MPL_SW_DEF_00000000T000000_99999999T999999_0001.EOF'
 FLX_OSC             = 'FLX_OPER_MPL_ORBSCT_20230703T000001_99999999T999999_0001.EOF'
 FLX_ZONE_THRESHOLD  = 'FLX_OPER_MPL_OBSMSK_20250212T125510_99999999T999999_0002_SVT3_THRESHOLD.EOF'
@@ -199,8 +201,10 @@ def _parse_bbox(bbox_str):
     return [(values[i], values[i+1]) for i in range(0, len(values), 2)]
 
 
-def _get_bboxes_by_tile_id(filepath):
+def _get_bboxes_by_tile_id(filepath, debug: bool = False):
     """Return dict of {TILE_IDENTIFIER: [(lat, lon), ...]} from the .dbl XML file."""
+    # if debug == True:
+    logger.info(f'Using AUX_UTMTIL: {filepath}')
     tree = ET.parse(filepath)
     root = tree.getroot()
 
@@ -211,6 +215,8 @@ def _get_bboxes_by_tile_id(filepath):
         if tile_id and bbox_str:
             result[tile_id] = _parse_bbox(bbox_str)
 
+    # if debug == True:
+    logger.info(f'Loaded AUX_UTMTIL: {len(result)} tiles')
     return result
 
 
@@ -396,6 +402,7 @@ def get_polygons(time_start: str, time_end: str, file_orbit: str, version: bool,
     list_zone_polygons      = _eocfi_polygon(time_start, time_end, datetime_validity_start, datetime_validity_end, debug)
     
     path_aux_utmtil         = importlib.resources.files(fcops) / 'data' / FLX_AUX_UTMTIL
+
     utm_bboxes              = _get_bboxes_by_tile_id(path_aux_utmtil)
     
     list_utm_polygons       = []

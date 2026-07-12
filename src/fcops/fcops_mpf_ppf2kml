@@ -11,9 +11,15 @@ import os
 import click
 import json
 import importlib
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
+from shapely.geometry import Polygon
+from pyproj import Transformer
+from shapely.ops import transform
 from typing import Optional
+
+from tomlkit import document
 
 import fcops
 
@@ -36,9 +42,10 @@ except Exception as e:
 from eocfi.api    import version as eocfi_version
 from eocfi.api_xo import xo_check_library_version
 
-FLX_SDF = 'FLX_OPER_MPL_SW_DEF_00000000T000000_99999999T999999_0001.EOF'
 # FLX_OSC = 'FLX_OPER_MPL_ORBSCT_20240204T220001_99999999T999999_0001.EOF'
-FLX_OSC = 'FLX_OPER_MPL_ORBSCT_20230703T000001_99999999T999999_0001.EOF'
+FLX_OSC             = 'FLX_OPER_MPL_ORBSCT_20230703T000001_99999999T999999_0001.EOF'
+FLX_AUX_UTMTIL      = 'flx_aux_utmtil_20190101T010101_20450101T010101_20240610T115500_01_FULL.dbl'
+FLX_SDF             = 'FLX_OPER_MPL_SW_DEF_00000000T000000_99999999T999999_0001.EOF'
 
 DATATAKE_MINIMUM_LENGTH     = timedelta(seconds = 32)
 DATATAKE_MINIMUM_SEPARATION = timedelta(seconds = 60)
@@ -66,6 +73,86 @@ def setup_debug_logging(debug_enabled):
             format="<level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
         )
         logger.debug("Debug logging enabled")
+
+
+def _eocfi_swathpos_to_polygon_proj(coordinates, debug: bool = False):
+    """ Convert zonevistime by eocfi to a pyproj Polygon and return a dict {zone: polygon} """
+    # Initialise the pyproj
+    transformer         = Transformer.from_crs("EPSG:4326", "EPSG:6933", always_xy = True)
+    lon_lat_coords      = [tuple(float(x) for x in s.split(',')) for s in coordinates]
+    polygon             = Polygon(lon_lat_coords)
+    '''
+    if debug == True:
+        logger.debug(f"Polygon before projection: {polygon}")
+    '''
+    polygon_proj        = transform(transformer.transform, polygon)
+    dict_zone_tile      = {polygon_proj}
+    return dict_zone_tile
+
+
+def _parse_bbox(bbox_str, debug: bool = False):
+    """Parse B_BOX string into list of (lat, lon) tuples."""
+    '''
+    
+    if debug == True:
+        logger.debug(f"_parse_bbox Parsing B_BOX: {bbox_str}")
+
+    if not isinstance(bbox_str, str):
+        raise TypeError(f"Expected a string for bbox_str, got {type(bbox_str).__name__}: {bbox_str!r}")
+
+    '''
+
+    list_items = bbox_str.split()
+    values     = []
+
+    for item in list_items:
+        try:
+            values.append(float(item))
+        except ValueError:
+            raise ValueError(f"Invalid value in B_BOX: {item} is not a float.")
+
+    '''
+    if len(values) % 2 != 0:
+        raise ValueError(f"Odd number of values in B_BOX, cannot form pairs: {values}")
+    '''
+
+    return [(values[i], values[i+1]) for i in range(0, len(values), 2)]
+
+
+def _utm_bbox_to_polygon_proj(tile, utm_bbox, debug: bool = False):
+    """ Convert UTM bounding box to a pyproj Polygon and return a dict {tile: polygon} """
+    # Initialise the pyproj
+    transformer         = Transformer.from_crs("EPSG:4326", "EPSG:6933", always_xy = True)
+    lon_lat_coords      = [(utm_bbox[0][1], utm_bbox[0][0]), (utm_bbox[1][1], utm_bbox[1][0]), (utm_bbox[2][1], utm_bbox[2][0]), (utm_bbox[3][1], utm_bbox[3][0])]
+    polygon             = Polygon(lon_lat_coords)
+    '''
+    if debug == True:
+        logger.debug(f"Polygon UTM before projection: {polygon}")
+    '''
+    polygon_proj        = transform(transformer.transform, polygon)
+    dict_utm_tile       = {tile: polygon_proj}
+    return dict_utm_tile
+
+
+def _get_bboxes_by_tile_id(filepath, debug: bool = False):
+    """Return dict of {TILE_IDENTIFIER: [(lat, lon), ...]} from the .dbl XML file."""
+    # if debug == True:
+    logger.info(f'Using AUX_UTMTIL: {filepath}')
+    tree    = ET.parse(filepath)
+    root    = tree.getroot()
+    result  = {}
+    for tile in root.iter("TILE"):
+        tile_id     = tile.findtext("TILE_IDENTIFIER")
+        bbox_str    = tile.findtext("B_BOX")
+        # logger.info(f"_get_bboxes_by_tile_id Tile ID : {tile_id}")
+        # logger.info(f"_get_bboxes_by_tile_id BBOX    : {bbox_str} - {type(bbox_str)}")
+        if tile_id and bbox_str:
+            result[tile_id] = _parse_bbox(bbox_str, debug)
+
+    # if debug == True:
+    logger.info(f'Loaded AUX_UTMTIL: {len(result)} tiles')
+    return result
+
 
 @click.group()
 @click.option('--version', is_flag = True, callback=print_version, expose_value=False, is_eager=True, help='Show version and library information.')
@@ -120,11 +207,13 @@ fcops_mpf_ppf2kml list --orbit test/data/FLX_OPER_MPL_ORBSCT_20230703T000001_999
 
 @cli.command()
 @click.argument('filepath', type=click.Path(exists=True))
-@click.option('--limit', '-l', type=int, default = 10   , help = 'Number of events to display')
-@click.option('--kml',      is_flag=True                , help = 'Output datatakes as KML')
-@click.option('--orbit', '-o', type=str                 , help = 'Orbit Scenario File')
+@click.option('--limit', '-l', type=int, default = 10   ,   help = 'Number of events to display')
+@click.option('--kml',      is_flag=True                ,   help = 'Output datatakes as KML')
+@click.option('--orbit', '-o', type=str                 ,   help = 'Orbit Scenario File')
+@click.option('--utm', '-u',    is_flag = True, default = False, help = 'Output datatakes UTM coordinates')
+@click.option('--Debug', '-D',  is_flag = True, default = False, help = 'Debug flag for verbose messages')
 @click.pass_context
-def list(ctx, filepath, limit, kml, orbit):
+def list(ctx, filepath, limit, kml, utm, orbit, debug):
     """List events from a planning file."""
 
     from eocfi.api_xl import xl_model_init
@@ -142,7 +231,7 @@ def list(ctx, filepath, limit, kml, orbit):
         path_orb_sct = orbit
         
     path_sdf        = importlib.resources.files(fcops) / 'data' / FLX_SDF
-    debug           = ctx.obj.get('debug', False) if ctx.obj else False
+    # debug           = ctx.obj.get('debug', False) if ctx.obj else False
     
     if debug == True:
         logger.info(f'initialise eocfi functions')
@@ -243,7 +332,7 @@ def list(ctx, filepath, limit, kml, orbit):
                     if ev.event_id == 'FPOBS_ID':
                         fpobs_time = ev.time
                         if debug == True:
-                            logger.debug(f'CALIB_ID_EOB={ev.parameters.get('CALIB_ID_EOB', 0)}')
+                            logger.debug(f'CALIB_ID_EOB   = {ev.parameters.get('CALIB_ID_EOB', 0)}')
                         current_calib_id = int( ev.parameters.get('CALIB_ID_EOB', 0) )
                         if last_calib_id == None:
                             last_calib_id = current_calib_id
@@ -294,7 +383,10 @@ def list(ctx, filepath, limit, kml, orbit):
                     list_cal_events.append(ev)
                     if ev.event_id == 'FPCAL_ID':
                         if debug == True:
-                            logger.debug(f'CALIB_ID_CAL={ev.parameters.get('CALIB_ID_CAL', 0)}')
+                            logger.debug(f'CALIB_ID_CAL   = {ev.parameters.get('CALIB_ID_CAL', 0)}')
+                            logger.debug(f'HR1_CAL_TYPE   = {ev.parameters.get('HR1_CAL_TYPE', 0)}')
+                            logger.debug(f'HR1_CAL_ST_CAL = {ev.parameters.get('HR1_CAL_ST_CAL', 0)}')
+                            logger.debug(f'HR2_CAL_ST_CAL = {ev.parameters.get('HR2_CAL_ST_CAL', 0)}')
                         current_calib_id = int( ev.parameters.get('CALIB_ID_CAL', 0) )
                         if last_calib_id == None:
                             last_calib_id = current_calib_id
@@ -325,7 +417,19 @@ def list(ctx, filepath, limit, kml, orbit):
         # -----------------------------------------------------------
 
         if datatakes:
-            
+
+            if utm:
+                # Load UTM tiles from AUX_UTMTIL file
+                path_aux_utmtil = importlib.resources.files(fcops) / 'data' / FLX_AUX_UTMTIL
+                utm_bboxes      = _get_bboxes_by_tile_id(str(path_aux_utmtil), debug)
+
+                list_utm_polygons       = []
+                list_utm_polygons_proj  = []
+                for tile_id, corners in utm_bboxes.items():
+                    # logger.info(f"xxx Tile ID: {tile_id}, BBOX: {corners} - {type(corners)}")
+                    polygon_utm = _utm_bbox_to_polygon_proj(tile_id, corners, debug)
+                    list_utm_polygons.append(polygon_utm)
+
             sorted_datatakes  = sorted(datatakes, key=lambda x: x[4] if x[4] else float('inf'))
             
             if kml:
@@ -360,12 +464,24 @@ def list(ctx, filepath, limit, kml, orbit):
                 etree.SubElement(line_style_cal, 'color').text = 'ff0000ff'  # blue
                 etree.SubElement(line_style_cal, 'width').text = '2'
 
+                style_cal = etree.SubElement(document, 'Style')
+                style_cal.set('id', 'utmStyle')
+                # poly_style_cal = etree.SubElement(style_cal, 'PolyStyle')
+                # etree.SubElement(poly_style_cal, 'color').text = '000000ff'  # transparent blue
+                # etree.SubElement(poly_style_cal, 'fill').text = '1'
+                line_style_cal = etree.SubElement(style_cal, 'LineStyle')
+                etree.SubElement(line_style_cal, 'color').text = 'ffffff00'  # blue
+                etree.SubElement(line_style_cal, 'width').text = '2'
+
                 obs_folder  = etree.SubElement(document, 'Folder')
                 etree.SubElement(obs_folder, 'name').text = 'Datatakes Observation'
                 
                 cal_folder = etree.SubElement(document, 'Folder')
                 etree.SubElement(cal_folder, 'name').text = 'Datatakes Calibration'
                 
+                utm_folder = etree.SubElement(document, 'Folder')
+                etree.SubElement(utm_folder, 'name').text = 'Calibration UTM Tiles'
+
                 for idx, (group_id, events, duration, dt_type, start_time, end_time) in enumerate(sorted_datatakes):
                     # Compute positions every 10 seconds between start and end
                     positions_west  = []
@@ -419,13 +535,13 @@ def list(ctx, filepath, limit, kml, orbit):
                     etree.SubElement(subfolder, 'description').text = description
                     
                     placemark = etree.SubElement(subfolder, 'Placemark')
-                    etree.SubElement(placemark, 'name').text = f'Group {group_id} ({dt_type})'
-                    etree.SubElement(placemark, 'styleUrl').text = f'#{dt_type}Style'
+                    etree.SubElement(placemark, 'name').text        = f'Group {group_id} ({dt_type})'
+                    etree.SubElement(placemark, 'styleUrl').text    = f'#{dt_type}Style'
                     
                     # Add TimeSpan for the datatake period
                     time_span = etree.SubElement(placemark, 'TimeSpan')
-                    etree.SubElement(time_span, 'begin').text = start_time.isoformat()
-                    etree.SubElement(time_span, 'end').text = end_time.isoformat()
+                    etree.SubElement(time_span, 'begin').text   = start_time.isoformat()
+                    etree.SubElement(time_span, 'end').text     = end_time.isoformat()
                     
                     # Add ExtendedData with parameter and event attributes
                     extended_data   = etree.SubElement(placemark, 'ExtendedData')
@@ -470,10 +586,34 @@ def list(ctx, filepath, limit, kml, orbit):
                         etree.SubElement(data_elem, 'displayName').text = 'Mode'
                         etree.SubElement(data_elem, 'value').text       = 'EOB'
                     else:  # calibration
+                        
+                        data_elem       = etree.SubElement(extended_data, 'Data')
+                        data_elem.set('name', 'HR1_CAL_TYPE')
+                        etree.SubElement(data_elem, 'displayName').text = 'HR1_CAL_TYPE'
+                        etree.SubElement(data_elem, 'value').text       = str(event_obj.parameters.get("HR1_CAL_TYPE", 0))
+                        
+                        data_elem       = etree.SubElement(extended_data, 'Data')
+                        data_elem.set('name', 'HR1_CAL_ST_CAL')
+                        etree.SubElement(data_elem, 'displayName').text = 'HR1_CAL_ST_CAL'
+                        etree.SubElement(data_elem, 'value').text       = str(event_obj.parameters.get("HR1_CAL_ST_CAL", 0))
+
+                        data_elem       = etree.SubElement(extended_data, 'Data')
+                        data_elem.set('name', 'HR2_CAL_TYPE')
+                        etree.SubElement(data_elem, 'displayName').text = 'HR2_CAL_TYPE'
+                        etree.SubElement(data_elem, 'value').text       = str(event_obj.parameters.get("HR2_CAL_TYPE", 0))
+                        
+                        data_elem       = etree.SubElement(extended_data, 'Data')
+                        data_elem.set('name', 'HR2_CAL_ST_CAL')
+                        etree.SubElement(data_elem, 'displayName').text = 'HR2_CAL_ST_CAL'
+                        etree.SubElement(data_elem, 'value').text       = str(event_obj.parameters.get("HR2_CAL_ST_CAL", 0))
+
+                        '''
                         data_elem.set('name', 'mode')
                         etree.SubElement(data_elem, 'displayName').text = 'Mode'
                         etree.SubElement(data_elem, 'value').text       = 'Not recognised'
-
+                        '''
+                        
+                        '''
                         if any(event.event_id == 'FCUSUN__' for event in events):
                             etree.SubElement(data_elem, 'value').text = f'CU-SUN-CALIBRATION_ST_CAL({str(event_obj.parameters.get("HR1_CAL_ST_CAL", 0))})'
 
@@ -482,6 +622,8 @@ def list(ctx, filepath, limit, kml, orbit):
 
                         if any(event.event_id == 'FCUDARK_' for event in events):
                             etree.SubElement(data_elem, 'value').text = f'CU-DARK-CALIBRATION_ST_CAL({str(event_obj.parameters.get("HR1_CAL_ST_CAL", 0))})'
+                        '''
+                        
 
                     # Add datatake start and end times
                     data_elem = etree.SubElement(extended_data, 'Data')
@@ -567,6 +709,9 @@ def list(ctx, filepath, limit, kml, orbit):
                     coordinates_text = "\n          ".join(coords)
                     
                     etree.SubElement(linear_ring, 'coordinates').text = coordinates_text
+
+                    polygon = _eocfi_swathpos_to_polygon_proj(coords, debug)
+                    # logger.debug(f"Polygon projected: {polygon}")
                     # ---------------------------------------------------------
                 
                 click.echo(etree.tostring(root, encoding='unicode', pretty_print=True))
