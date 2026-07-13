@@ -19,7 +19,6 @@ from pyproj import Transformer
 from shapely.ops import transform
 from typing import Optional
 
-from tomlkit import document
 
 import fcops
 
@@ -29,6 +28,7 @@ from loguru import logger
 logger = logger.patch(lambda record: record.update(name=record["file"].name))
 
 from fcops.parser_xml_ppf import parse_file_ppf, PlanningFile, get_calibration_mode
+from fcops.floris_modes import get_floris_mode_label
 from lxml import etree
 
 try:
@@ -524,8 +524,12 @@ def list(ctx, filepath, limit, kml, utm, orbit, debug):
                     # Create single Placemark for datatake with LinearRing connecting start and end
                     parent_folder   = obs_folder if dt_type == 'observation' else cal_folder
                     subfolder       = etree.SubElement(parent_folder, 'Folder')
-                    etree.SubElement(subfolder, 'name').text = f'{dt_type.capitalize()} Datatake#{param_value} - {start_time.strftime("%Y-%m-%d %H:%M:%S")}'
-                    
+
+                    if dt_type == 'observation':
+                        etree.SubElement(subfolder, 'name').text = f'{dt_type.capitalize()} Datatake#{param_value} - {start_time.strftime("%Y-%m-%d %H:%M:%S")}'
+                    else:
+                        etree.SubElement(subfolder, 'name').text = f'{dt_type.capitalize()} Datatake#{param_value} - {start_time.strftime("%Y-%m-%d %H:%M:%S")} - {get_floris_mode_label(int(event_obj.parameters.get("HR1_CAL_ST_CAL", 0)))}'
+
                     description = f'Type: {dt_type}\nDuration: {duration}\nStart: {start_time}\nEnd: {end_time}'
                     if idx < len(sorted_datatakes) - 1:
                         next_start_time = sorted_datatakes[idx + 1][4]
@@ -535,8 +539,15 @@ def list(ctx, filepath, limit, kml, utm, orbit, debug):
                     etree.SubElement(subfolder, 'description').text = description
                     
                     placemark = etree.SubElement(subfolder, 'Placemark')
-                    etree.SubElement(placemark, 'name').text        = f'Group {group_id} ({dt_type})'
+
+
+                    if dt_type == 'observation':
+                        etree.SubElement(placemark, 'name').text = f'{dt_type.capitalize()} Datatake#{param_value} - {start_time.strftime("%Y-%m-%d %H:%M:%S")}'
+                    else:
+                        etree.SubElement(placemark, 'name').text = f'{dt_type.capitalize()} Datatake#{param_value} - {start_time.strftime("%Y-%m-%d %H:%M:%S")} - {get_floris_mode_label(int(event_obj.parameters.get("HR1_CAL_ST_CAL", 0)))}'
+
                     etree.SubElement(placemark, 'styleUrl').text    = f'#{dt_type}Style'
+                    # etree.SubElement(placemark, 'name').text        = f'Group {group_id} ({dt_type})'
                     
                     # Add TimeSpan for the datatake period
                     time_span = etree.SubElement(placemark, 'TimeSpan')
@@ -587,6 +598,10 @@ def list(ctx, filepath, limit, kml, utm, orbit, debug):
                         etree.SubElement(data_elem, 'value').text       = 'EOB'
                     else:  # calibration
                         
+                        data_elem.set('name', 'mode')
+                        etree.SubElement(data_elem, 'displayName').text = 'Mode'
+                        etree.SubElement(data_elem, 'value').text       = get_floris_mode_label(int(event_obj.parameters.get("HR1_CAL_ST_CAL", 0)))
+
                         data_elem       = etree.SubElement(extended_data, 'Data')
                         data_elem.set('name', 'HR1_CAL_TYPE')
                         etree.SubElement(data_elem, 'displayName').text = 'HR1_CAL_TYPE'
