@@ -16,6 +16,10 @@ CONTEXT_SETTINGS = {"help_option_names": ['-h', '--help'], "max_content_width" :
 
 '''
 > https://catalog.maap.eo.esa.int/catalogue/collections/FLEXL1CommissioningProducts10
+> https://catalog.maap.eo.esa.int/catalogue/collections/FLEXRAWL0CALVALProducts10
+> https://catalog.maap.eo.esa.int/catalogue/collections/FLEXL2Products10
+> https://catalog.maap.eo.esa.int/catalogue/collections/FLEXAuxiliaryProducts10
+
 
 '''
 

@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 
-'''
-
-'''
-from http import client
 import os
 import json
 import inspect
-import cdsapi
-from pystac_client import Client
+from datetime import datetime, timedelta, timezone
+# import cdsapi
+from ecmwf.datastores import Client
 
 import logging
 
@@ -46,24 +43,28 @@ CONTEXT_SETTINGS = {"help_option_names": ['-h', '--help'], "max_content_width" :
 @click.command(context_settings=CONTEXT_SETTINGS, no_args_is_help = False)
 # @click.command(context_settings=CONTEXT_SETTINGS, no_args_is_help = True)
 @click.option('--version', '-v',     is_flag = True, default = False,    help = 'It shows the version')
-@click.option('--collection_id', '-c',                                   help = 'collection id: e.g. "cams-global-atmospheric-composition-forecasts"')
+@click.option('--collection_id', '-c', default = 'cams-global-atmospheric-composition-forecasts', help = 'default collection id: e.g. "cams-global-atmospheric-composition-forecasts"')
 @click.option('--Collection', '-C',  is_flag = True, default = False,    help = 'It shows the collections')
+@click.option('--T0', '-T0',                         default = 10,       help = 'Time latency in hours of the forecast availability')
+@click.option('--list', '-l',        is_flag = True, default = False,    help = 'List metadata of the collection')
 @click.option('--Silent', '-S',      is_flag = True, default = False,    help = 'Avoid logging messages')
 @click.option('--Debug', '-D',       is_flag = True, default = False,    help = 'Debug flag for verbose messages')
 
-def query_collection(version: bool, collection_id: str, collection: bool, silent: bool, debug: bool):
+def query_collection(version: bool, collection_id: str, collection: bool, t0: int, list: bool, silent: bool, debug: bool):
+# def query_collection(version: bool, collection_id: str, collection: bool, delta: int, list: bool, silent: bool, debug: bool):
 
     """
     \b
     Query CAMS API for product metadata extraction.
     > https://cds.climate.copernicus.eu/api
+    > https://confluence.ecmwf.int/spaces/CKB/pages/212454117/CAMS+Global+atmospheric+composition+forecast+data+documentation
     \b
 
     """    
 
     '''
-        > /home/borja/.ecmwfdatastoresrc
-        > /home/borja/.cdsapirc
+        > $HOME/.ecmwfdatastoresrc
+        > $HOME/.cdsapirc
     '''
 
     if version == True:
@@ -72,15 +73,9 @@ def query_collection(version: bool, collection_id: str, collection: bool, silent
 
     if debug == True:
         logger.info('Setting debug mode ON')
-        logging.basicConfig(handlers = [InterceptHandler()], level = 'DEBUG', force = True)
+        # logging.basicConfig(handlers = [InterceptHandler()], level = 'DEBUG', force = True)
 
-
-    '''
     
-    
-    '''
-
-    from ecmwf.datastores import Client
     client = Client()
     client.check_authentication()
 
@@ -104,13 +99,13 @@ def query_collection(version: bool, collection_id: str, collection: bool, silent
 
     collection = client.get_collection(collection_id)
 
-    if debug == True:
+    if list == True:
+        # print(f'Description: {collection.description}')
+        # print()
         print(f'Collection ID: {collection.id}')
         print()
         print(f'Title: {collection.title}')
         print()
-        # print(f'Description: {collection.description}')
-        # print()
         print(f'Published at: {collection.published_at}')
         print()
         print(f'Updated at: {collection.updated_at}')
@@ -119,69 +114,85 @@ def query_collection(version: bool, collection_id: str, collection: bool, silent
         print()
         print(f'end: {collection.end_datetime}')
         print()
+        # exit(0)
 
-    request = {
-                    "variable": [
+    if collection_id != 'cams-global-atmospheric-composition-forecasts':
+        logger.error(f"Collection id '{collection_id}' is not supported for download. Please use 'cams-global-atmospheric-composition-forecasts'.")
+        exit(66)
+
+    midnight_utc            = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday_utc           = datetime.now(timezone.utc) - timedelta(days=1)
+    yesterday_str           = (datetime.now(timezone.utc) - timedelta(days=1)).strftime('%Y%m%d')
+    tomorrow_str            = (datetime.now(timezone.utc) + timedelta(days=1)).strftime('%Y%m%d')
+    now_utc                 = datetime.now(timezone.utc)
+    now_utc_hour            = datetime.now(timezone.utc).hour
+    now_str                 = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')
+    today_str               = datetime.now(timezone.utc).strftime('%Y%m%d')
+    # collection_end_datetime = datetime.fromisoformat(collection.end_datetime)
+    collection_end_datetime = collection.end_datetime
+    time_delta              = timedelta(hours = t0)
+    request_date            = None
+
+    if now_utc - time_delta > yesterday_utc:
+        filename     = f"FLX_AUX_CAMS___{today_str}T000000_{today_str}T120000_{now_str}_01.zip"
+        request_date = today_str
+        request_time = '00:00'
+    else:
+        if now_utc_hour > 22:
+            filename     = f"FLX_AUX_CAMS___{today_str}T120000_{tomorrow_str}T000000_{now_str}_01.zip"
+            request_date = today_str
+            request_time = '00:00'
+        else:
+            filename     = f"FLX_AUX_CAMS___{yesterday_str}T120000_{today_str}T000000_{now_str}_01.zip"
+            request_date = yesterday_str
+            request_time = '12:00'
+
+    if midnight_utc > collection_end_datetime + timedelta( hours = 10 ):
+        logger.warning(f"Collection '{collection_id}' may not available for download until {collection_end_datetime + timedelta( hours = 10 )}.")
+
+    request_cams_global_atmospheric_composition_forecasts = {
+                    'variable': [
                         'total_aerosol_optical_depth_550nm',
                         'total_aerosol_optical_depth_670nm',
                         'total_aerosol_optical_depth_865nm'
                     ],
-                    "date": ["2026-04-26"],
-                    "time": ["12:00"],
-                    "leadtime_hour": [ '0','1','2','3','4','5','6','7','8','9','10','11','12' ],
-                    "type": ['forecast'],
-                    "area": [75, -180, -56, 180],
-                    "data_format": "netcdf_zip"
+                    'date': [request_date],
+                    'time': [request_time],
+                    'leadtime_hour': [ '0','1','2','3','4','5','6','7','8','9','10','11','12' ],
+                    'type': ['forecast'],
+                    'area': [75, -180, -56, 180],
+                    'data_format': 'netcdf_zip'
     }
 
-    constrained_request = client.apply_constraints(collection_id, request)
+    if list == False or list == True:
+        logger.info(f"Requesting collection '{collection_id}' for {filename} with the following parameters:")
+        logger.info(json.dumps(request_cams_global_atmospheric_composition_forecasts, indent=4))
 
-    print(len(constrained_request))
 
-    print()
+    constrained_request = client.apply_constraints(collection_id, request_cams_global_atmospheric_composition_forecasts)
 
-    print(constrained_request.keys())
-
-    print()
+    logger.info(f"Collection {collection_id} coverage: {constrained_request['date'][-1]}")
+  
+    if list == False:
+        try:
+            remote = client.retrieve(collection_id, request_cams_global_atmospheric_composition_forecasts, target=filename)
+            logger.info(f"Retrieved {filename}")
+        # results = client.get_results(remote.request_id)
+        except Exception as e:
+            logger.error(f"Error during retrieval: {e}")
     
-    '''
-    for variable in constrained_request['variable']:
-        print(variable)
-    '''
-
-
-    print(constrained_request['leadtime_hour'])
-
-    print()
-
-    print(constrained_request['pressure_level'])
-
-    print(constrained_request['date'])
-
-    print()
-
-    print(len(constrained_request['date']))
-
-    print()
-
-    print(constrained_request['date'][-1])
-
-    try:
-        client.retrieve(collection_id, request, target='target_2.zip')
-    except Exception as e:
-        print(f"Error during retrieval: {e}")
-
     exit(0)
 
+    '''
     c = cdsapi.Client()
     dataset = 'cams-global-atmospheric-composition-forecasts'
     request = {
-                    "variable": [
-                    "total_aerosol_optical_depth_550nm",
-                    "total_aerosol_optical_depth_670nm",
-                    "total_aerosol_optical_depth_865nm"
+                    'variable': [
+                    'total_aerosol_optical_depth_550nm',
+                    'total_aerosol_optical_depth_670nm',
+                    'total_aerosol_optical_depth_865nm'
                     ],
-                    "date": ["2026-04-26"],
+                    "date": [request_date],
                     "time": ["00:00"],
                     "leadtime_hour": [ "0","1","2","3","4","5","6","7","8","9","10","11","12" ],
                     "type": ["forecast"],
@@ -190,16 +201,15 @@ def query_collection(version: bool, collection_id: str, collection: bool, silent
         }
     target = "cams_20260426.zip"
     c.retrieve(dataset, request, target)
-
+    '''
+    
     exit(0)
-
 
 
 def version():
     return package_version('fcops')
 
 if __name__ == '__main__':
-    print('pedo')
     query_collection()
 
 
