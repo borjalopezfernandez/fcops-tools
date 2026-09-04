@@ -154,7 +154,8 @@ def query_collection(version: bool, collection_id: str, collection: bool, t0: in
                     'variable': [
                         'total_aerosol_optical_depth_550nm',
                         'total_aerosol_optical_depth_670nm',
-                        'total_aerosol_optical_depth_865nm'
+                        'total_aerosol_optical_depth_865nm',
+                        'total_column_water_vapour'
                     ],
                     'date': [request_date],
                     'time': [request_time],
