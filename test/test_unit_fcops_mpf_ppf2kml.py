@@ -152,6 +152,13 @@ class TestCLIIntegration(unittest.TestCase):
         print(cmd)
         logger.debug(cmd)
 
+    def test_process_nppf_kml_com_1(self):
+        """ Test SVT-3 plan """
+        if not self.cli_command:
+            self.skipTest("CLI command not available")
+        cmd = 'fcops_mpf_ppf2kml list --orbit test/data/FLX_OPER_MPL_ORBSCT_20260915T044228_99999999T999999_0001.EOF --kml test/data/FLX_OPER_MPL_NPPF___20260921T000000_20261018T000000_0001.xml > test/data/FLX_OPER_MPL_NPPF___20260921T000000_20261018T000000_0001.kml'
+        print(cmd)
+        logger.debug(cmd)
 
 if __name__ == '__main__':
     unittest.main()

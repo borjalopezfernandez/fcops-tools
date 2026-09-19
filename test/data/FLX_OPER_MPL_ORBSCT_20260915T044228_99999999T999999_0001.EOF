@@ -1,0 +1,264 @@
+<?xml version="1.0"?>
+<Earth_Observation_File xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://eop-cfi.esa.int/CFI" xsi:schemaLocation="http://eop-cfi.esa.int/CFI http://eop-cfi.esa.int/CFI/EE_CFI_SCHEMAS/EO_OPER_MPL_ORBSCT_0300.XSD" schemaVersion="3.0">
+  <Earth_Observation_Header>
+    <Fixed_Header>
+      <File_Name>FLX_OPER_MPL_ORBSCT_20260915T044228_99999999T999999_0001</File_Name>
+      <File_Description>Reference Orbit Scenario File</File_Description>
+      <Notes/>
+      <Mission>FLEX</Mission>
+      <File_Class>OPER</File_Class>
+      <File_Type>MPL_ORBSCT</File_Type>
+      <Validity_Period>
+        <Validity_Start>UTC=2026-09-15T04:42:28</Validity_Start>
+        <Validity_Stop>UTC=9999-99-99T99:99:99</Validity_Stop>
+      </Validity_Period>
+      <File_Version>0001</File_Version>
+      <EOFFS_Version>3.0</EOFFS_Version>
+      <Source>
+        <System/>
+        <Creator>EO_ORBIT:xo_gen_osf_append_orbit_change</Creator>
+        <Creator_Version>02.05.01</Creator_Version>
+        <Creation_Date>UTC=2026-09-17T13:51:07</Creation_Date>
+      </Source>
+    </Fixed_Header>
+    <Variable_Header>
+      <Time_Reference>UT1</Time_Reference>
+    </Variable_Header>
+  </Earth_Observation_Header>
+  <Data_Block type="xml">
+    <List_of_Orbit_Changes count="8">
+      <Orbit_Change>
+        <Orbit>
+          <Absolute_Orbit>2</Absolute_Orbit>
+          <Relative_Orbit>63</Relative_Orbit>
+          <Cycle_Number>1</Cycle_Number>
+          <Phase_Number>1</Phase_Number>
+        </Orbit>
+        <Cycle>
+          <Repeat_Cycle unit="day">27</Repeat_Cycle>
+          <Cycle_Length unit="orbit">385</Cycle_Length>
+          <ANX_Longitude unit="deg">259.604308</ANX_Longitude>
+          <ANX_Longitude_Drift>
+            <Offset unit="deg">0.000000</Offset>
+            <Linear_Term unit="deg/day">-1.262100</Linear_Term>
+          </ANX_Longitude_Drift>
+          <MLST>22:00:51.388000</MLST>
+          <MLST_Drift unit="s/day">-1.720000</MLST_Drift>
+          <MLST_Nonlinear_Drift>
+            <Linear_Approx_Validity unit="orbit">99999</Linear_Approx_Validity>
+            <Quadratic_Term unit="s/day^2">0.000000</Quadratic_Term>
+            <Harmonics_Terms num="0"/>
+          </MLST_Nonlinear_Drift>
+        </Cycle>
+        <Time_of_ANX>
+          <TAI>TAI=2026-09-15T04:43:04.626478</TAI>
+          <UTC>UTC=2026-09-15T04:42:27.626478</UTC>
+          <UT1>UT1=2026-09-15T04:42:27.626478</UT1>
+        </Time_of_ANX>
+      </Orbit_Change>
+      <Orbit_Change>
+        <Orbit>
+          <Absolute_Orbit>91</Absolute_Orbit>
+          <Relative_Orbit>152</Relative_Orbit>
+          <Cycle_Number>1</Cycle_Number>
+          <Phase_Number>1</Phase_Number>
+        </Orbit>
+        <Cycle>
+          <Repeat_Cycle unit="day">27</Repeat_Cycle>
+          <Cycle_Length unit="orbit">385</Cycle_Length>
+          <ANX_Longitude unit="deg">164.768097</ANX_Longitude>
+          <ANX_Longitude_Drift>
+            <Offset unit="deg">0.000000</Offset>
+            <Linear_Term unit="deg/day">-1.248000</Linear_Term>
+          </ANX_Longitude_Drift>
+          <MLST>22:00:40.651200</MLST>
+          <MLST_Drift unit="s/day">-1.800000</MLST_Drift>
+          <MLST_Nonlinear_Drift>
+            <Linear_Approx_Validity unit="orbit">99999</Linear_Approx_Validity>
+            <Quadratic_Term unit="s/day^2">0.000000</Quadratic_Term>
+            <Harmonics_Terms num="0"/>
+          </MLST_Nonlinear_Drift>
+        </Cycle>
+        <Time_of_ANX>
+          <TAI>TAI=2026-09-21T11:02:14.580318</TAI>
+          <UTC>UTC=2026-09-21T11:01:37.580318</UTC>
+          <UT1>UT1=2026-09-21T11:01:37.580318</UT1>
+        </Time_of_ANX>
+      </Orbit_Change>
+      <Orbit_Change>
+        <Orbit>
+          <Absolute_Orbit>206</Absolute_Orbit>
+          <Relative_Orbit>267</Relative_Orbit>
+          <Cycle_Number>1</Cycle_Number>
+          <Phase_Number>1</Phase_Number>
+        </Orbit>
+        <Cycle>
+          <Repeat_Cycle unit="day">27</Repeat_Cycle>
+          <Cycle_Length unit="orbit">385</Cycle_Length>
+          <ANX_Longitude unit="deg">131.347630</ANX_Longitude>
+          <ANX_Longitude_Drift>
+            <Offset unit="deg">0.000000</Offset>
+            <Linear_Term unit="deg/day">-0.983000</Linear_Term>
+          </ANX_Longitude_Drift>
+          <MLST>22:00:26.114400</MLST>
+          <MLST_Drift unit="s/day">-1.370000</MLST_Drift>
+          <MLST_Nonlinear_Drift>
+            <Linear_Approx_Validity unit="orbit">99999</Linear_Approx_Validity>
+            <Quadratic_Term unit="s/day^2">0.000000</Quadratic_Term>
+            <Harmonics_Terms num="0"/>
+          </MLST_Nonlinear_Drift>
+        </Cycle>
+        <Time_of_ANX>
+          <TAI>TAI=2026-09-29T13:15:40.955598</TAI>
+          <UTC>UTC=2026-09-29T13:15:03.955598</UTC>
+          <UT1>UT1=2026-09-29T13:15:03.955598</UT1>
+        </Time_of_ANX>
+      </Orbit_Change>
+      <Orbit_Change>
+        <Orbit>
+          <Absolute_Orbit>233</Absolute_Orbit>
+          <Relative_Orbit>294</Relative_Orbit>
+          <Cycle_Number>1</Cycle_Number>
+          <Phase_Number>1</Phase_Number>
+        </Orbit>
+        <Cycle>
+          <Repeat_Cycle unit="day">27</Repeat_Cycle>
+          <Cycle_Length unit="orbit">385</Cycle_Length>
+          <ANX_Longitude unit="deg">167.825786</ANX_Longitude>
+          <ANX_Longitude_Drift>
+            <Offset unit="deg">0.000000</Offset>
+            <Linear_Term unit="deg/day">-0.676500</Linear_Term>
+          </ANX_Longitude_Drift>
+          <MLST>22:00:23.367600</MLST>
+          <MLST_Drift unit="s/day">-0.990000</MLST_Drift>
+          <MLST_Nonlinear_Drift>
+            <Linear_Approx_Validity unit="orbit">99999</Linear_Approx_Validity>
+            <Quadratic_Term unit="s/day^2">0.000000</Quadratic_Term>
+            <Harmonics_Terms num="0"/>
+          </MLST_Nonlinear_Drift>
+        </Cycle>
+        <Time_of_ANX>
+          <TAI>TAI=2026-10-01T10:49:43.451358</TAI>
+          <UTC>UTC=2026-10-01T10:49:06.451358</UTC>
+          <UT1>UT1=2026-10-01T10:49:06.451358</UT1>
+        </Time_of_ANX>
+      </Orbit_Change>
+      <Orbit_Change>
+        <Orbit>
+          <Absolute_Orbit>304</Absolute_Orbit>
+          <Relative_Orbit>365</Relative_Orbit>
+          <Cycle_Number>1</Cycle_Number>
+          <Phase_Number>1</Phase_Number>
+        </Orbit>
+        <Cycle>
+          <Repeat_Cycle unit="day">27</Repeat_Cycle>
+          <Cycle_Length unit="orbit">385</Cycle_Length>
+          <ANX_Longitude unit="deg">171.939626</ANX_Longitude>
+          <ANX_Longitude_Drift>
+            <Offset unit="deg">0.000000</Offset>
+            <Linear_Term unit="deg/day">-0.370000</Linear_Term>
+          </ANX_Longitude_Drift>
+          <MLST>22:00:18.324000</MLST>
+          <MLST_Drift unit="s/day">-0.600000</MLST_Drift>
+          <MLST_Nonlinear_Drift>
+            <Linear_Approx_Validity unit="orbit">99999</Linear_Approx_Validity>
+            <Quadratic_Term unit="s/day^2">0.000000</Quadratic_Term>
+            <Harmonics_Terms num="0"/>
+          </MLST_Nonlinear_Drift>
+        </Cycle>
+        <Time_of_ANX>
+          <TAI>TAI=2026-10-06T10:33:11.086158</TAI>
+          <UTC>UTC=2026-10-06T10:32:34.086158</UTC>
+          <UT1>UT1=2026-10-06T10:32:34.086158</UT1>
+        </Time_of_ANX>
+      </Orbit_Change>
+      <Orbit_Change>
+        <Orbit>
+          <Absolute_Orbit>333</Absolute_Orbit>
+          <Relative_Orbit>9</Relative_Orbit>
+          <Cycle_Number>1</Cycle_Number>
+          <Phase_Number>1</Phase_Number>
+        </Orbit>
+        <Cycle>
+          <Repeat_Cycle unit="day">27</Repeat_Cycle>
+          <Cycle_Length unit="orbit">385</Cycle_Length>
+          <ANX_Longitude unit="deg">159.031968</ANX_Longitude>
+          <ANX_Longitude_Drift>
+            <Offset unit="deg">0.000000</Offset>
+            <Linear_Term unit="deg/day">-0.064000</Linear_Term>
+          </ANX_Longitude_Drift>
+          <MLST>22:00:17.258400</MLST>
+          <MLST_Drift unit="s/day">-0.060000</MLST_Drift>
+          <MLST_Nonlinear_Drift>
+            <Linear_Approx_Validity unit="orbit">99999</Linear_Approx_Validity>
+            <Quadratic_Term unit="s/day^2">0.000000</Quadratic_Term>
+            <Harmonics_Terms num="0"/>
+          </MLST_Nonlinear_Drift>
+        </Cycle>
+        <Time_of_ANX>
+          <TAI>TAI=2026-10-08T11:24:47.858478</TAI>
+          <UTC>UTC=2026-10-08T11:24:10.858478</UTC>
+          <UT1>UT1=2026-10-08T11:24:10.858478</UT1>
+        </Time_of_ANX>
+      </Orbit_Change>
+      <Orbit_Change>
+        <Orbit>
+          <Absolute_Orbit>406</Absolute_Orbit>
+          <Relative_Orbit>82</Relative_Orbit>
+          <Cycle_Number>1</Cycle_Number>
+          <Phase_Number>1</Phase_Number>
+        </Orbit>
+        <Cycle>
+          <Repeat_Cycle unit="day">27</Repeat_Cycle>
+          <Cycle_Length unit="orbit">385</Cycle_Length>
+          <ANX_Longitude unit="deg">115.694593</ANX_Longitude>
+          <ANX_Longitude_Drift>
+            <Offset unit="deg">0.000000</Offset>
+            <Linear_Term unit="deg/day">-0.027000</Linear_Term>
+          </ANX_Longitude_Drift>
+          <MLST>22:00:16.902000</MLST>
+          <MLST_Drift unit="s/day">-0.000000</MLST_Drift>
+          <MLST_Nonlinear_Drift>
+            <Linear_Approx_Validity unit="orbit">99999</Linear_Approx_Validity>
+            <Quadratic_Term unit="s/day^2">0.000000</Quadratic_Term>
+            <Harmonics_Terms num="0"/>
+          </MLST_Nonlinear_Drift>
+        </Cycle>
+        <Time_of_ANX>
+          <TAI>TAI=2026-10-13T14:18:08.472078</TAI>
+          <UTC>UTC=2026-10-13T14:17:31.472078</UTC>
+          <UT1>UT1=2026-10-13T14:17:31.472078</UT1>
+        </Time_of_ANX>
+      </Orbit_Change>
+      <Orbit_Change>
+        <Orbit>
+          <Absolute_Orbit>435</Absolute_Orbit>
+          <Relative_Orbit>111</Relative_Orbit>
+          <Cycle_Number>1</Cycle_Number>
+          <Phase_Number>1</Phase_Number>
+        </Orbit>
+        <Cycle>
+          <Repeat_Cycle unit="day">27</Repeat_Cycle>
+          <Cycle_Length unit="orbit">385</Cycle_Length>
+          <ANX_Longitude unit="deg">103.482208</ANX_Longitude>
+          <ANX_Longitude_Drift>
+            <Offset unit="deg">0.000000</Offset>
+            <Linear_Term unit="deg/day">0.000000</Linear_Term>
+          </ANX_Longitude_Drift>
+          <MLST>22:00:16.902000</MLST>
+          <MLST_Drift unit="s/day">0.000000</MLST_Drift>
+          <MLST_Nonlinear_Drift>
+            <Linear_Approx_Validity unit="orbit">99999</Linear_Approx_Validity>
+            <Quadratic_Term unit="s/day^2">0.000000</Quadratic_Term>
+            <Harmonics_Terms num="0"/>
+          </MLST_Nonlinear_Drift>
+        </Cycle>
+        <Time_of_ANX>
+          <TAI>TAI=2026-10-15T15:06:59.444478</TAI>
+          <UTC>UTC=2026-10-15T15:06:22.444478</UTC>
+          <UT1>UT1=2026-10-15T15:06:22.444478</UT1>
+        </Time_of_ANX>
+      </Orbit_Change>
+    </List_of_Orbit_Changes>
+  </Data_Block>
+</Earth_Observation_File>

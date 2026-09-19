@@ -4,7 +4,7 @@
     <Fixed_Header>
       <File_Name>FLX_OPER_MPL_SW_DEF_00000000T000000_99999999T999999_0001</File_Name>
       <File_Description>Swath Definition File</File_Description>
-      <Notes>Local Normal Pointing + Yaw Steering Attitude (AOCS mode 2)</Notes>
+      <Notes>20260909 Pre-Launch configuration</Notes>
       <Mission>FLEX</Mission>
       <File_Class>OPER</File_Class>
       <File_Type>MPL_SW_DEF</File_Type>
@@ -17,8 +17,8 @@
       <Source>
         <System>Manual</System>
         <Creator>ESA/ESTEC</Creator>
-        <Creator_Version>1.0</Creator_Version>
-        <Creation_Date>UTC=2019-05-17T11:00:00</Creation_Date>
+        <Creator_Version>02.05.01</Creator_Version>
+        <Creation_Date>UTC=2026-09-09T12:00:00</Creation_Date>
       </Source>
     </Fixed_Header>
     <Variable_Header/>

@@ -233,6 +233,8 @@ def list(ctx, filepath, limit, kml, utm, orbit, debug):
     path_sdf        = importlib.resources.files(fcops) / 'data' / FLX_SDF
     # debug           = ctx.obj.get('debug', False) if ctx.obj else False
     
+    ppf_name = Path(os.path.basename(filepath)).stem
+
     if debug == True:
         logger.info(f'initialise eocfi functions')
 
@@ -252,6 +254,9 @@ def list(ctx, filepath, limit, kml, utm, orbit, debug):
         logger.info(f'xv_swath_id_init {os.path.basename(str(path_sdf))}')
     swath_mode = XV_FILE_SDF
     xv_swath_id_init(swath_mode, str(path_sdf), debug)
+
+    if debug == True:
+        logger.info(f'Parsing PPF {filepath}')
 
     try:
         planning = parse_file_ppf(filepath)
@@ -436,7 +441,7 @@ def list(ctx, filepath, limit, kml, utm, orbit, debug):
                 # Generate KML
                 root        = etree.Element('kml', xmlns='http://www.opengis.net/kml/2.2')
                 document    = etree.SubElement(root, 'Document')
-                etree.SubElement(document, 'name').text = 'FLEX Core Operations Service'
+                etree.SubElement(document, 'name').text = f'{ppf_name}'
                 
                  # Add UTM tiles
                 style_obs = etree.SubElement(document, 'Style')
@@ -478,9 +483,11 @@ def list(ctx, filepath, limit, kml, utm, orbit, debug):
                 
                 cal_folder = etree.SubElement(document, 'Folder')
                 etree.SubElement(cal_folder, 'name').text = 'Datatakes Calibration'
-                
-                utm_folder = etree.SubElement(document, 'Folder')
-                etree.SubElement(utm_folder, 'name').text = 'Calibration UTM Tiles'
+
+                '''
+                    utm_folder = etree.SubElement(document, 'Folder')
+                    etree.SubElement(utm_folder, 'name').text = 'Calibration UTM Tiles'
+                '''
 
                 for idx, (group_id, events, duration, dt_type, start_time, end_time) in enumerate(sorted_datatakes):
                     # Compute positions every 10 seconds between start and end
@@ -526,9 +533,9 @@ def list(ctx, filepath, limit, kml, utm, orbit, debug):
                     subfolder       = etree.SubElement(parent_folder, 'Folder')
 
                     if dt_type == 'observation':
-                        etree.SubElement(subfolder, 'name').text = f'{dt_type.capitalize()} Datatake#{param_value} - {start_time.strftime("%Y-%m-%d %H:%M:%S")}'
+                        etree.SubElement(subfolder, 'name').text = f'DT#{param_value} - {start_time.strftime("%Y-%m-%d %H:%M:%S")}'
                     else:
-                        etree.SubElement(subfolder, 'name').text = f'{dt_type.capitalize()} Datatake#{param_value} - {start_time.strftime("%Y-%m-%d %H:%M:%S")} - {get_floris_mode_label(int(event_obj.parameters.get("HR1_CAL_ST_CAL", 0)))}'
+                        etree.SubElement(subfolder, 'name').text = f'DT#{param_value} - {start_time.strftime("%Y-%m-%d %H:%M:%S")} - {get_floris_mode_label(int(event_obj.parameters.get("HR1_CAL_ST_CAL", 0)))}'
 
                     description = f'Type: {dt_type}\nDuration: {duration}\nStart: {start_time}\nEnd: {end_time}'
                     if idx < len(sorted_datatakes) - 1:
@@ -542,9 +549,9 @@ def list(ctx, filepath, limit, kml, utm, orbit, debug):
 
 
                     if dt_type == 'observation':
-                        etree.SubElement(placemark, 'name').text = f'{dt_type.capitalize()} Datatake#{param_value} - {start_time.strftime("%Y-%m-%d %H:%M:%S")}'
+                        etree.SubElement(placemark, 'name').text = f'{dt_type.capitalize()} DT#{param_value} - {start_time.strftime("%Y-%m-%d %H:%M:%S")}'
                     else:
-                        etree.SubElement(placemark, 'name').text = f'{dt_type.capitalize()} Datatake#{param_value} - {start_time.strftime("%Y-%m-%d %H:%M:%S")} - {get_floris_mode_label(int(event_obj.parameters.get("HR1_CAL_ST_CAL", 0)))}'
+                        etree.SubElement(placemark, 'name').text = f'{dt_type.capitalize()} DT#{param_value} - {start_time.strftime("%Y-%m-%d %H:%M:%S")} - {get_floris_mode_label(int(event_obj.parameters.get("HR1_CAL_ST_CAL", 0)))}'
 
                     etree.SubElement(placemark, 'styleUrl').text    = f'#{dt_type}Style'
                     # etree.SubElement(placemark, 'name').text        = f'Group {group_id} ({dt_type})'
