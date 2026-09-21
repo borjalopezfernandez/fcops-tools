@@ -16,6 +16,16 @@ def build(context):
 
 
 @task
+def download_wheels(context):
+    '''
+    Download fcops wheels
+    '''
+    cmd = 'pip download . -d wheels/   --platform manylinux2014_x86_64    --only-binary=:all:'
+    logger.info(cmd)
+    context.run(cmd)
+
+
+@task
 def install(context):
     '''
     Install fcops latest built package with pip
