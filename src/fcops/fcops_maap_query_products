@@ -12,8 +12,8 @@ import click
 CONTEXT_SETTINGS = {"help_option_names": ['-h', '--help'], "max_content_width" : 220}
 
 @click.command(context_settings=CONTEXT_SETTINGS, no_args_is_help = True)
-@click.option('--start', '-s',                                           help = 'start datetime in format YYYY-MM-DDThh:mm:ssZ / 2025-10-22T00:00:00Z')
-@click.option('--end', '-e',                                             help = 'end datetime in format YYYY-MM-DDThh:mm:ssZ / 2025-10-23T00:00:00Z')
+@click.option('--start', '-s',                                           help = 'start datetime in format YYYY-MM-DDThh:mm:ssZ / 2026-09-19T00:00:00Z')
+@click.option('--end', '-e',                                             help = 'end datetime in format YYYY-MM-DDThh:mm:ssZ / 2026-09-23T00:00:00Z')
 @click.option('--type', '-t',                                            help = 'API productType filter RAW_XS_HR1 | RAW_XS_HR2 | RAW_XS_LR_', default = 'RAW_XS_HR1')
 @click.option('--baseline', '-b',                                        help = 'API product version attribute matching the baseline (e.g. 02)')
 @click.option('--CSV', '-C',         is_flag = True, default = False,    help = 'Output results to CSV file')
@@ -24,6 +24,21 @@ CONTEXT_SETTINGS = {"help_option_names": ['-h', '--help'], "max_content_width" :
 def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, version: bool, silent: bool, debug: bool):
 
     """
+
+    \b
+    Query MAAP catalogue for FLEX products data-take information within some time interval and product type within the following collections:
+    > FLEXL0EOProductsInternal:
+    - L0__OBS___
+    \b
+
+
+    \b
+    Query MAAP catalogue for FLEX products data-take information within some time interval and product type within the following collections:
+    > FLEXL1BEOProductsInternal:
+    - L1B_OBS___
+    \b
+
+
     \b
     Query MAAP catalogue for FLEX products data-take information within some time interval and product type within the following collections:
     > FLEXRAWProductsInternal:
@@ -39,6 +54,15 @@ def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, v
     - L0__PDHUTM
     - L0__ICUDTM
     - L0__NAVATT
+    - L0__INSTTM
+    - L0__VAU_TM
+    \b
+
+    \b
+    > FLEXL1BAncProductsInternal:
+    - ANC_ATTRES
+    - ANC_ORBRES
+    - ANC_ROTLOS
     \b
 
     \b
@@ -48,6 +72,10 @@ def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, v
     - L0__TST_LR
     \b
 
+    \b
+    > FLEXL1AuxProductsInternal:
+    - AUX_IERS_A
+    \b
 
     
     \b
@@ -81,14 +109,31 @@ def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, v
 
     flex_collections     = None
 
+    if type in ['L0__OBS___']:
+        flex_collections = ['FLEXL0EOProductsInternal']
+
+    if type in ['L1B_OBS___']:
+        flex_collections = ['FLEXL1BEOProductsInternal']
+
     if type in ['RAW_XS_HR1', 'RAW_XS_HR2', 'RAW_XS_LR_', 'RAW_XS_OBC']:
         flex_collections = ['FLEXRAWProductsInternal']
 
-    if type in ['L0__SAT_TM', 'L0__PDHUTM', 'L0__ICUDTM', 'L0__NAVATT']:
+    if type in ['L0__SAT_TM', 'L0__PDHUTM', 'L0__ICUDTM', 'L0__NAVATT', 'L0__INSTTM', 'L0__VAU_TM']:
         flex_collections = ['FLEXL0AncProductsInternal']
 
     if type in ['L0__TST_H1', 'L0__TST_H2', 'L0__TST_LR']:
         flex_collections = ['FLEXL0NotNomProductsInternal']
+
+    if type in ['AUX_IERS_A']:
+        flex_collections = ['FLEXL1AuxProductsInternal']
+
+    if type in ['ANC_ATTRES', 'ANC_ORBRES', 'ANC_ROTLOS']:
+        flex_collections = ['FLEXL1BAncProductsInternal']
+
+
+    
+
+
 
     if flex_collections is None:
         logger.error(f"Error: product type {type} is not supported")
