@@ -5,6 +5,12 @@ FLEX Planning File (PPF) Parser CLI
 
 Command-line interface for parsing and querying FLEX mission planning XML files.
 
+grep 'id="FPOBS_ID"' FLX_OPER_MPL_DNPPF__20261108T220000_20261116T000000_0002.xml | grep -oP 'CALIB_ID_EOB="\K[^"]*'
+
+grep 'id="FPCAL_ID"' FLX_OPER_MPL_DNPPF__20261108T220000_20261116T000000_0002.xml | grep -oP 'CALIB_ID_CAL="\K[^"]*'
+
+
+
 """
 from operator import pos
 import os

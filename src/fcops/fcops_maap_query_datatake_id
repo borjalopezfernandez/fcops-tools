@@ -20,13 +20,14 @@ import click
 CONTEXT_SETTINGS = {"help_option_names": ['-h', '--help'], "max_content_width" : 220}
 
 @click.command(context_settings=CONTEXT_SETTINGS, no_args_is_help = True)
-@click.option('--id', '-i',                                              help = 'datatake id / e.g. 47919223')
+@click.option('--id', '-i',                                              help = 'datatake id / e.g. 1801')
+@click.option('--type', '-t',                                            help = 'productType filter L0__OBS___ | L1B_OBS___ | L1C_FLXSYN | L2__FLXSYN' )
 @click.option('--version', '-v',     is_flag = True, default = False,    help = 'It shows the version')
 @click.option('--Silent', '-S',      is_flag = True, default = False,    help = 'Avoid logging messages')
 @click.option('--Debug', '-D',       is_flag = True, default = False,    help = 'Debug flag for verbose messages')
 
 
-def query_datatake_id(id: str, version: bool, silent: bool, debug: bool):
+def query_datatake_id(id: str, type: str, version: bool, silent: bool, debug: bool):
 
     """
     \b
@@ -47,7 +48,23 @@ def query_datatake_id(id: str, version: bool, silent: bool, debug: bool):
         exit(0)
 
     URL_LANDING_PAGE    = 'https://catalog.maap.eo.esa.int/catalogue/'
-    FLEX_COLLECTIONS    = ['FLEXRAWL0CALVALProducts10', 'FLEXL1CommissioningProducts10', 'FLEXL2Products10']
+    FLEX_COLLECTIONS    = ['FLEXL0EOProductsInternal', 'FLEXL1BEOProductsInternal', 'FLEXL1BCalProductsInternal', 'FLEXL1CEOProductsInternal', 'FLEXL2EOProductsInternal']
+    
+    if type in ['L0__OBS___']:
+        FLEX_COLLECTIONS = ['FLEXL0EOProductsInternal']
+    
+    if type in ['L0__CLOUD_', 'L0__CTE___', 'L0__DARKNP', 'L0__DARKOC', 'L0__DARKSR', 'L0__DEFDAR', 'L0__DEFRTS', 'L0__DEFSUN', 'L0__DRKMTF', 'L0__DRKSTR', 'L0__LINDAR', 'L0__LINDES', 'L0__LINSEA', 'L0__LINSUN', 'L0__MOONSL', 'L0__MOON__', 'L0__SUN___']:
+        FLEX_COLLECTIONS = ['FLEXL0CALProductsInternal']
+    
+    if type in ['L1B_OBS___']:
+        FLEX_COLLECTIONS = ['FLEXL1BEOProductsInternal']
+    
+    if type in ['L1C_FLXSYN']:
+        FLEX_COLLECTIONS = ['FLEXL1CEOProductsInternal']
+
+    if type in ['L2__FLXSYN']:
+        FLEX_COLLECTIONS = ['FLEXL2EOProductsInternal']
+    
     api                 = None
 
     try:
