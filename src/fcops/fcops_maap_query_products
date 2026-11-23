@@ -129,7 +129,7 @@ def query_datatakes(start: str, end: str, type: str, baseline: str, csv: bool, v
     if type in ['L0__OBS___']:
         flex_collections = ['FLEXL0EOProductsInternal']
 
-    if type in ['L0__CLOUD_', 'L0__CTE___', 'L0__DARKNP', 'L0__DARKOC', 'L0__DARKSR', 'L0__DEFDAR', 'L0__DEFRTS', 'L0__DEFSUN', 'L0__DRKMTF', 'L0__DRKSTR', 'L0__LINDAR', 'L0__LINDES', 'L0__LINSEA', 'L0__LINSUN', 'L0__MOONSL', 'L0__MOON__', 'L0__SUN___']:
+    if type in ['L0__CAL___', 'L0__CLOUD_', 'L0__CTE___', 'L0__DARKNP', 'L0__DARKOC', 'L0__DARKSR', 'L0__DEFDAR', 'L0__DEFRTS', 'L0__DEFSUN', 'L0__DRKMTF', 'L0__DRKSTR', 'L0__LINDAR', 'L0__LINDES', 'L0__LINSEA', 'L0__LINSUN', 'L0__MOONSL', 'L0__MOON__', 'L0__SUN___']:
         flex_collections = ['FLEXL0CALProductsInternal']
 
     if type in ['L1B_OBS___']:
